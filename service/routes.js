@@ -182,7 +182,7 @@ router.get('/service/geojson/:type', async (req, res, next) => {
 })
 
 // Vector tiles
-router.get('/tiles/target-areas/:z/:x/:y.pbf', async (req, res, next) => {
+router.get('/service/vector-tiles/:z/:x/:y.pbf', async (req, res, next) => {
   const { x, y, z } = req.params
   fs.readFile(`${path.join(__dirname)}/vt/${z}/${x}/${y}.pbf`, (err, data) => {
     if (err) {
@@ -195,26 +195,6 @@ router.get('/tiles/target-areas/:z/:x/:y.pbf', async (req, res, next) => {
     }
     res.end(null, 'binary')
   })
-})
-
-// GeoJSON warning areas used with TippeCanoe (creating vector tiles)
-router.get('/service/flood-warning-areas-geojson', async (req, res, next) => {
-  try {
-    res.status(200).json(await mapServices.getTargetAreasGeoJSON('warning'))
-  } catch (err) {
-    res.status(500)
-    console.log(err)
-  }
-})
-
-// GeoJSON alert areas used with TippeCanoe (creating vector tiles)
-router.get('/service/target-areas-geojson', async (req, res, next) => {
-  try {
-    res.status(200).json(await mapServices.getTargetAreasGeoJSON())
-  } catch (err) {
-    res.status(500)
-    console.log(err)
-  }
 })
 
 module.exports = router
