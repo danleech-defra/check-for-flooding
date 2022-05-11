@@ -55,9 +55,9 @@ function LiveMap (mapId, options) {
 
   // Add target areas to corresponsing warning layers
   const filterTargetAreas = () => {
-    const severe = warningsData.features.filter(f => f.properties.severity === 1).map(f => f.id)
-    const warnings = warningsData.features.filter(f => f.properties.severity === 2).map(f => f.id)
-    const alerts = warningsData.features.filter(f => f.properties.severity === 3).map(f => f.id)
+    const severe = warningData.features.filter(f => f.properties.severity === 1).map(f => f.id)
+    const warnings = warningData.features.filter(f => f.properties.severity === 2).map(f => f.id)
+    const alerts = warningData.features.filter(f => f.properties.severity === 3).map(f => f.id)
     // Symbol layers
     map.setFilter('alerts', ['match', ['get', 'id'], alerts.length ? alerts : '', true, false])
     // Polygon layers
@@ -346,63 +346,12 @@ function LiveMap (mapId, options) {
     // feature.set('html', html)
   }
 
-  // We need to wait for warnings data and style data to load
-  // IE11: Could refactor to use async/await with several polyfills
-  const initMap = () => {
-    if (!(state.isWarningsDataLoaded && state.isStyleDataLoaded)) { return }
-    // Add images
-    // const alertSymbol = new window.Image(50, 50)
-    // alertSymbol.onload = () => map.addImage('alertSymbol', alertSymbol)
-    // alertSymbol.src = svgStringToImageSrc(maps.style.graphics[4])
-    // Add sources
-    map.addSource('aerial', maps.style.source.aerial)
-    map.addSource('target-areas', maps.style.source['target-areas'])
-    map.addSource('warnings', { type: 'geojson', data: warningsData })
-    map.addSource('river-levels', maps.style.source['river-levels'])
-    // Add layers
-    map.addLayer(maps.style.aerial, composite[0].id)
-    // map.addLayer(maps.style.targetAreas)
-    map.addLayer(maps.style['severe-polygons-fill'])
-    map.addLayer(maps.style['warning-polygons-fill'])
-    map.addLayer(maps.style['alert-polygons-fill'], 'road numbers')
-    map.addLayer(maps.style.alerts)
-    map.addLayer(maps.style['river-levels'])
-    // Load icons
-    // Object.keys(maps.style.symbols).forEach(key => {
-    //   const imageSrc = svgStringToImageSrc(maps.style.symbols[key])
-    //   map.loadImage(imageSrc, (error, image) => {
-    //     if (error) throw error
-    //     map.addImage(key, image)
-    //   })
-    // })
-    // map.loadImage('/public/images/map-symbols-2x.png', (error, image) => {
-    //   if (error) throw error
-    //   forEach( => {
-    //   map.addImage('markers', image)
-    //   })
-    //   map.addSource('river-levels', maps.style.source['river-levels'])
-    //   map.addLayer(maps.style['river-levels'])
-    // })
-    // map.addLayer(maps.style.alertPolygonsLine, 'road numbers')
-    // Set layer visibility based on query params
-    setLayerVisibility(lyrs)
-    // Style target areas based on warnings data
-    filterTargetAreas()
-    console.log(map.querySourceFeatures('target-areas'))
-    // Set polygon opacity
-    setFillOpacity(['severe-polygons-fill', 'warning-polygons-fill', 'alert-polygons-fill'])
-  }
-
+  // Show reset button if extent has changed
   const toggleReset = () => {
-    // Show reset button if extent has changed
     const ext = maps.getExtentFromBounds(map.getBounds())
     if (isNewExtent(ext)) {
       resetButton.removeAttribute('disabled')
     }
-  }
-
-  const svgStringToImageSrc = (svgString) => {
-    return 'data:image/svg+xml;base64,' + window.btoa(svgString)
   }
 
   // const addImages = () => {
@@ -415,6 +364,36 @@ function LiveMap (mapId, options) {
   //     console.log(map.listImages())
   //   })
   // }
+
+  // We need to wait for warnings data and style data to load
+  // IE11: Could refactor to use async/await with several polyfills
+  const initMap = () => {
+    if (!(style && warningData && stationData)) { return }
+    // Add images
+    // const alertSymbol = new window.Image(50, 50)
+    // alertSymbol.onload = () => map.addImage('alertSymbol', alertSymbol)
+    // alertSymbol.src = svgStringToImageSrc(maps.style.graphics[4])
+    // Add sources
+    map.addSource('aerial', maps.style.source.aerial)
+    map.addSource('target-areas', maps.style.source['target-areas'])
+    map.addSource('warnings', { type: 'geojson', data: warningData })
+    map.addSource('stations', { type: 'geojson', data: stationData })
+    // Add layers
+    map.addLayer(maps.style.aerial, composite[0].id)
+    // map.addLayer(maps.style.targetAreas)
+    map.addLayer(maps.style['severe-polygons-fill'])
+    map.addLayer(maps.style['warning-polygons-fill'])
+    map.addLayer(maps.style['alert-polygons-fill'], 'road numbers')
+    map.addLayer(maps.style.alerts)
+    map.addLayer(maps.style['river-levels'])
+    // map.addLayer(maps.style.alertPolygonsLine, 'road numbers')
+    // Set layer visibility based on query params
+    setLayerVisibility(lyrs)
+    // Style target areas based on warnings data
+    filterTargetAreas()
+    // Set polygon opacity
+    setFillOpacity(['severe-polygons-fill', 'warning-polygons-fill', 'alert-polygons-fill'])
+  }
 
   //
   // Setup
@@ -431,25 +410,14 @@ function LiveMap (mapId, options) {
     visibleFeatures: [],
     selectedFeatureId: '',
     initialExt: [],
-    hasOverlays: false,
-    isWarningsDataLoaded: false,
-    isStyleDataLoaded: false
+    hasOverlays: false
   }
 
   // Layers
   let composite = null
 
   // We need to get warnings data first as mapbox unlike Openlayers only works with contents of viewport
-  let warningsData = null
-  xhr(`${window.location.origin}/service/geojson/warnings`, (err, response) => {
-    if (err) {
-      console.log('Error: ' + err)
-    } else {
-      warningsData = response
-      state.isWarningsDataLoaded = true
-      initMap()
-    }
-  }, 'json')
+  let style, warningData, stationData
 
   // View
   // const view = new View({
@@ -550,25 +518,62 @@ function LiveMap (mapId, options) {
   //   maxzoom: 14
   // })
 
-  const svgImage = new window.Image(50, 50)
-  svgImage.src = svgStringToImageSrc(maps.symbols.severe)
+  // Object.keys(maps.symbols).forEach(key => {
+  //   map.loadImage(maps.symbols[key], (error, image) => {
+  //     if (error) throw error
+  //     map.addImage(key, image)
+  //   })
+  // })
+  // map.loadImage('/public/images/map-symbols-2x.png', (error, image) => {
+  //   if (error) throw error
+  //   forEach( => {
+  //   map.addImage('markers', image)
+  //   })
+  //   map.addSource('river-levels', maps.style.source['river-levels'])
+  //   map.addLayer(maps.style['river-levels'])
+  // })
+
+  xhr(`${window.location.origin}/service/geojson/warnings`, (err, response) => {
+    if (err) {
+      console.log('Error: ' + err)
+    } else {
+      warningData = response
+      initMap()
+    }
+  }, 'json')
+
+  xhr(`${window.location.origin}/service/geojson/river`, (err, response) => {
+    if (err) {
+      console.log('Error: ' + err)
+    } else {
+      stationData = response
+      initMap()
+    }
+  }, 'json')
 
   //
   // Events
   //
 
-  // Image load
-  svgImage.onload = () => {
-    map.addImage('svg', svgImage)
-  }
-
   // Style data has loaded
   map.once('styledata', () => {
-    const style = map.getStyle()
-    // Set reference to these layers so we can toggle visibility later
-    composite = style.layers
-    state.isStyleDataLoaded = true
-    initMap()
+    // Load symbols
+    const images = []
+    Object.keys(maps.symbols).forEach(key => {
+      console.log(key)
+      map.loadImage(maps.symbols[key], (error, image) => {
+        if (error) throw error
+        map.addImage(key, image)
+        images.push(key)
+        console.log(images.length, Object.keys(maps.symbols).length)
+        if (images.length === Object.keys(maps.symbols).length) {
+          style = map.getStyle()
+          // Set reference to these layers so we can toggle visibility later
+          composite = style.layers
+          initMap()
+        }
+      })
+    })
   })
 
   // Map has finishing drawing so we have the bounds

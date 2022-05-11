@@ -38,7 +38,7 @@ module.exports = {
     }
     return geoJSON
   },
-  getStationsGeoJSON: async (type) => {
+  getStationsGeoJSON: async () => {
     const response = await db.query(`
       SELECT station_id, rloi_id, lon, lat,
       CASE
@@ -49,9 +49,8 @@ module.exports = {
       WHEN type = 'rainfall' THEN 'R'
       ELSE NULL END AS type,
       is_wales, initcap(latest_state) AS latest_state, status, name, river_name, hydrological_catchment_id, hydrological_catchment_name, initcap(latest_trend) AS latest_trend, latest_height, rainfall_1hr, rainfall_6hr, rainfall_24hr, latest_datetime AT TIME ZONE '+00' AS latest_datetime, level_high, level_low, station_up, station_down
-      FROM measure_with_latest
-      WHERE type LIKE $1;
-    `, [`%${type}%`])
+      FROM measure_with_latest;
+    `)
     const features = []
     response.forEach(item => {
       features.push({

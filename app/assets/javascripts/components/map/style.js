@@ -13,11 +13,6 @@ window.flood.maps.style = {
       type: 'vector',
       tiles: [`${window.location.origin}/service/vector-tiles/{z}/{x}/{y}.pbf`],
       maxzoom: 12
-    },
-    'river-levels': {
-      type: 'geojson',
-      tiles: [`${window.location.origin}/service/geojson/river`],
-      maxzoom: 12
     }
   },
   aerial: {
@@ -86,10 +81,12 @@ window.flood.maps.style = {
   },
   'river-levels': {
     id: 'river-levels',
-    source: 'river-levels',
+    source: 'stations',
     type: 'symbol',
     layout: {
-      'icon-image': 'severe'
+      'icon-image': 'river',
+      'icon-size': 0.5,
+      'icon-allow-overlap': true
     }
   }
 }
