@@ -40,15 +40,10 @@ module.exports = {
   },
   getStationsGeoJSON: async () => {
     const response = await db.query(`
-      SELECT station_id, rloi_id, lon, lat,
-      CASE
-      WHEN type = 'river' AND is_multi_stage THEN 'M'
-      WHEN type = 'river' AND NOT is_multi_stage THEN 'S'
-      WHEN type = 'groundwater' THEN 'G'
-      WHEN type = 'tide' THEN 'C'
-      WHEN type = 'rainfall' THEN 'R'
-      ELSE NULL END AS type,
-      is_wales, initcap(latest_state) AS latest_state, status, name, river_name, hydrological_catchment_id, hydrological_catchment_name, initcap(latest_trend) AS latest_trend, latest_height, rainfall_1hr, rainfall_6hr, rainfall_24hr, latest_datetime AT TIME ZONE '+00' AS latest_datetime, level_high, level_low, station_up, station_down
+      SELECT station_id,
+      CASE WHEN type = 'tide' AND river_slug IS NOT NULL THEN 'river' WHEN type = 'tide' AND river_slug IS NULL THEN 'sea' ELSE type END AS type,
+      rloi_id, lon, lat, is_multi_stage, measure_type,
+      is_wales, latest_state, status, name, river_name, hydrological_catchment_id, hydrological_catchment_name, latest_trend, latest_height, rainfall_1hr, rainfall_6hr, rainfall_24hr, latest_datetime AT TIME ZONE '+00' AS latest_datetime, level_high, level_low, station_up, station_down
       FROM measure_with_latest;
     `)
     const features = []
@@ -64,21 +59,22 @@ module.exports = {
           type: item.type,
           name: item.name,
           river: item.river_name,
-          catchmentId: item.hydrological_catchment_id,
-          catchmentName: item.hydrological_catchment_name,
+          // catchmentId: item.hydrological_catchment_id,
+          // catchmentName: item.hydrological_catchment_name,
           status: item.status,
-          value: item.latest_height,
           value1hr: item.rainfall_1hr,
           value6hr: item.rainfall_6hr,
           value24hr: item.rainfall_24hr,
-          trend: item.trend,
-          valueDate: item.latest_datetime,
-          percentile5: item.level_high,
-          percentile95: item.level_low,
-          up: item.station_up,
-          down: item.station_down,
-          atrisk: item.latest_state === 'High',
-          iswales: item.is_wales
+          latestHeight: item.latest_height,
+          latestTrend: item.trend,
+          latestState: item.latest_state,
+          latestDate: item.latest_datetime,
+          // levelHigh: item.level_high,
+          // levelLow: item.level_low,
+          stationUp: item.station_up,
+          stationDown: item.station_down,
+          isMultiStage: item.is_multi_stage,
+          isDownstage: item.measure_type === 'downstage'
         }
       })
     })

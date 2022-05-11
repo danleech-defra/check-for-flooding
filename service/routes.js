@@ -164,7 +164,7 @@ router.get('/service/outlook', async (req, res, next) => {
 router.get('/service/geojson/:type', async (req, res, next) => {
   const type = req.params.type
   try {
-    if (['river', 'tide', 'groundwater', 'rainfall'].includes(type)) {
+    if (type === 'stations') {
       res.status(200).json(await mapServices.getStationsGeoJSON(type))
     } else if (type === 'warnings') {
       res.status(200).json(await mapServices.getWarningsGeoJSON())

@@ -70,7 +70,7 @@
     "keypather": "^3.0.0",
     "lodash": "^4.17.21",
     "lodash.isequal": "^4.5.0",
-    "maplibre-gl": "^1.15.2",
+    "maplibre-gl": "^1.15.3",
     "marked": "^4.0.10",
     "moment-timezone": "^0.5.33",
     "node-sass": "^6.0.1",
