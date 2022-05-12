@@ -557,6 +557,17 @@ function LiveMap (mapId, options) {
     })
   })
 
+  // Style redraw bug (changing icon on zoom) requires redraw
+  // let zoom = map.getZoom()
+  // map.on('render', (e) => {
+  //   if ((zoom > 10 && map.getZoom() < 10) || (zoom < 10 && map.getZoom() > 10)) {
+  //     console.log('refresh')
+  //     console.log(zoom, map.getZoom())
+  //   }
+  //   zoom = map.getZoom()
+  //   // setStyle
+  // })
+
   // Map has finishing drawing so we have the bounds
   map.once('load', toggleReset)
 

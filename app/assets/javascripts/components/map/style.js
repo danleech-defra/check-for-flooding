@@ -130,10 +130,16 @@ window.flood.maps.style = {
     source: 'stations',
     type: 'symbol',
     layout: {
-      'icon-image': ['match', ['get', 'latestState'],
-        'high', 'level-withrisk',
-        ['match', ['get', 'status'], 'active', 'level', 'level-error']
+      // 'icon-image': ['step', ['zoom'], 'level', 10, 'river'],
+      'icon-image': ['step', ['zoom'],
+        ['match', ['get', 'latestState'], 'high', 'level-withrisk', ['match', ['get', 'status'], 'active', 'level', 'level-error']],
+        10,
+        ['match', ['get', 'latestState'], 'high', 'river-high', ['match', ['get', 'status'], 'active', 'river', 'river-error']]
       ],
+      // 'icon-image': ['match', ['get', 'latestState'],
+      //   'high', 'river-high',
+      //   ['match', ['get', 'status'], 'active', 'river', 'river-error']
+      // ],
       'icon-size': 0.5,
       'icon-allow-overlap': true,
       'symbol-sort-key': ['match', ['get', 'latestState'],
