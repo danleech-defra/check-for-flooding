@@ -36,12 +36,13 @@ function LiveMap (mapId, options) {
   }
 
   // Add target areas to corresponsing warning layers
-  const filterLayerFeatures = () => {
-    const sourceFeatures = map.querySourceFeatures('warnings')
-    const severe = [...new Set(sourceFeatures.filter(f => f.properties.severity === 1).map(f => f.id))]
-    const warnings = [...new Set(sourceFeatures.filter(f => f.properties.severity === 2).map(f => f.id))]
-    const alerts = [...new Set(sourceFeatures.filter(f => f.properties.severity === 3).map(f => f.id))]
+  const addWarnings = (geojson) => {
+    // Add point data here to save on requests 
+    map.getSource('warnings').setData(geojson)
     // Polygon layers
+    const severe = geojson.features.filter(f => f.properties.severity === 1).map(f => f.properties.id)
+    const warnings = geojson.features.filter(f => f.properties.severity === 2).map(f => f.properties.id)
+    const alerts = geojson.features.filter(f => f.properties.severity === 3).map(f => f.properties.id)
     map.setFilter('severe-polygons-fill', ['match', ['get', 'id'], severe.length ? severe : '', true, false])
     map.setFilter('warning-polygons-fill', ['match', ['get', 'id'], warnings.length ? warnings : '', true, false])
     map.setFilter('alert-polygons-fill', ['match', ['get', 'id'], alerts.length ? alerts : '', true, false])
@@ -365,10 +366,10 @@ function LiveMap (mapId, options) {
     }
   }
 
-  // We need to wait for warnings data and style data to load
-  // IE11: Could refactor to use async/await with several polyfills
+  // We need to wait for style data to load before adding sources and layers
   const initMap = () => {
-    if (!style) { return }
+    // Get a referecne to background layers
+    composite = map.getStyle().layers
     // Add sources
     map.addSource('aerial', maps.style.source.aerial)
     map.addSource('target-areas', maps.style.source['target-areas'])
@@ -386,10 +387,23 @@ function LiveMap (mapId, options) {
     map.addLayer(maps.style.alert, 'warning')
     map.addLayer(maps.style['river-stations'], 'alert')
     map.addLayer(maps.style['sea-stations'], 'river-stations')
+    // Add warnings data here so that we have access to all features
+    loadGeoJson(`${window.location.origin}/service/geojson/warnings`, addWarnings)
     // Set layer visibility based on query params
     setLayerVisibility()
     // Set polygon opacity
     setFillOpacity(['severe-polygons-fill', 'warning-polygons-fill', 'alert-polygons-fill'])
+  }
+
+  // A helper method to load geojson at runtime
+  const loadGeoJson = (uri, callback) => {
+    xhr(uri, (err, response) => {
+      if (err) {
+        console.log('Error: ' + err)
+      } else {
+        callback(response)
+      }
+    }, 'json')
   }
 
   //
@@ -412,9 +426,6 @@ function LiveMap (mapId, options) {
 
   // Layers
   let composite = null
-
-  // We need to get warnings data first as mapbox unlike Openlayers only works with contents of viewport
-  let style
 
   // View
   // const view = new View({
@@ -518,15 +529,6 @@ function LiveMap (mapId, options) {
   //   map.addLayer(maps.style['river-levels'])
   // })
 
-  // xhr(`${window.location.origin}/service/geojson/warnings`, (err, response) => {
-  //   if (err) {
-  //     console.log('Error: ' + err)
-  //   } else {
-  //     warningData = response
-  //     initMap()
-  //   }
-  // }, 'json')
-
   // xhr(`${window.location.origin}/service/geojson/stations`, (err, response) => {
   //   if (err) {
   //     console.log('Error: ' + err)
@@ -550,9 +552,7 @@ function LiveMap (mapId, options) {
         map.addImage(key, image)
         images.push(key)
         if (images.length === Object.keys(maps.symbols).length) {
-          style = map.getStyle()
           // Set reference to these layers so we can toggle visibility later
-          composite = style.layers
           initMap()
         }
       })
@@ -560,11 +560,11 @@ function LiveMap (mapId, options) {
   })
 
   // Filter target area polygons when warnings source updates
-  map.on('sourcedata', (e) => {
-    if (!(e.sourceId === 'warnings' && map.isSourceLoaded('warnings'))) return
-    // Add features to specific layers
-    filterLayerFeatures()
-  })
+  // map.on('sourcedata', (e) => {
+  //   if (!(e.sourceId === 'warnings' && map.isSourceLoaded('warnings'))) return
+  //   // Add features to specific layers
+  //   filterLayerFeatures()
+  // })
 
   // Map has finishing drawing so we have the bounds
   map.once('load', toggleReset)

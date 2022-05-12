@@ -16,7 +16,7 @@ window.flood.maps.style = {
     },
     warnings: {
       type: 'geojson',
-      data: `${window.location.origin}/service/geojson/warnings`,
+      data: { type: 'FeatureCollection', features: [] },
       promoteId: 'id'
     },
     stations: {
@@ -30,16 +30,6 @@ window.flood.maps.style = {
     source: 'aerial',
     layout: {
       visibility: 'none'
-    }
-  },
-  alerts: {
-    id: 'alerts',
-    source: 'warnings', // Added at run time
-    type: 'symbol',
-    filter: ['in', 'id', ''],
-    layout: {
-      'icon-image': 'Airport',
-      'icon-size': 0.5
     }
   },
   'severe-polygons-fill': {
