@@ -14,6 +14,11 @@ window.flood.maps.style = {
       tiles: [`${window.location.origin}/service/vector-tiles/{z}/{x}/{y}.pbf`],
       maxzoom: 12
     },
+    warnings: {
+      type: 'geojson',
+      data: `${window.location.origin}/service/geojson/warnings`,
+      promoteId: 'id'
+    },
     stations: {
       type: 'geojson',
       data: `${window.location.origin}/service/geojson/stations`
@@ -45,7 +50,8 @@ window.flood.maps.style = {
     paint: {
       'fill-color': '#e3000f'
     },
-    filter: ['in', 'id', '']
+    filter: ['in', 'id', ''],
+    minzoom: 10
   },
   'warning-polygons-fill': {
     id: 'warning-polygons-fill',
@@ -55,7 +61,8 @@ window.flood.maps.style = {
     paint: {
       'fill-color': '#e3000f'
     },
-    filter: ['in', 'id', '']
+    filter: ['in', 'id', ''],
+    minzoom: 10
   },
   'alert-polygons-fill': {
     id: 'alert-polygons-fill',
@@ -66,22 +73,67 @@ window.flood.maps.style = {
       'fill-color': '#f18700',
       'fill-opacity': 0.5
     },
-    filter: ['in', 'id', '']
+    filter: ['in', 'id', ''],
+    minzoom: 10
   },
-  'alert-polygons-stroke': {
-    id: 'alert-polygons-stroke',
-    source: 'target-areas',
-    'source-layer': 'targetareas',
-    type: 'line',
-    'line-join': 'round',
-    'line-cap': 'round',
-    'line-miter-limit': 10,
-    paint: {
-      'line-color': '#ffdd00',
-      'line-width': 4,
-      'line-offset': -2
+  // 'alert-polygons-stroke': {
+  //   id: 'alert-polygons-stroke',
+  //   source: 'target-areas',
+  //   'source-layer': 'targetareas',
+  //   type: 'line',
+  //   'line-join': 'round',
+  //   'line-cap': 'round',
+  //   'line-miter-limit': 10,
+  //   paint: {
+  //     'line-color': '#ffdd00',
+  //     'line-width': 4,
+  //     'line-offset': -2
+  //   },
+  //   filter: ['in', 'id', '']
+  // },
+  severe: {
+    id: 'severe',
+    source: 'warnings',
+    type: 'symbol',
+    layout: {
+      'icon-image': 'severe',
+      'icon-size': 0.5,
+      'icon-allow-overlap': true
     },
-    filter: ['in', 'id', '']
+    filter: ['all', ['==', ['get', 'severity'], 1], ['<', ['zoom'], 10]]
+  },
+  warning: {
+    id: 'warning',
+    source: 'warnings',
+    type: 'symbol',
+    layout: {
+      'icon-image': 'warning',
+      'icon-size': 0.5,
+      'icon-allow-overlap': true
+    },
+    filter: ['all', ['==', ['get', 'severity'], 2], ['<', ['zoom'], 10]]
+  },
+  alert: {
+    id: 'alert',
+    source: 'warnings',
+    type: 'symbol',
+    layout: {
+      'icon-image': 'alert',
+      'icon-size': 0.5,
+      'icon-allow-overlap': true
+    },
+    filter: ['all', ['==', ['get', 'severity'], 3], ['<', ['zoom'], 10]]
+  },
+  removed: {
+    id: 'removed',
+    source: 'warnings',
+    type: 'symbol',
+    layout: {
+      'icon-image': 'removed',
+      'icon-size': 0.5,
+      'icon-allow-overlap': true
+    },
+    filter: ['==', ['get', 'severity'], 4]
   },
   'river-stations': {
     id: 'river-stations',

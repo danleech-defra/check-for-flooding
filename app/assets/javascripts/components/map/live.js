@@ -35,34 +35,46 @@ function LiveMap (mapId, options) {
     return !((isSameWidth || isSameHeight) && isInititalWithinNew)
   }
 
-  // Show or hide layers
-  const setLayerVisibility = (lyrs) => {
-    // Composite group
-    composite.forEach(layer => {
-      map.setLayoutProperty(layer.id, 'visibility', lyrs.includes('mv') ? 'visible' : 'none')
-    })
-    // Composite custom properties
-    map.setLayoutProperty('country names', 'visibility', 'none')
-    // Aerial
-    map.setLayoutProperty('aerial', 'visibility', lyrs.includes('sv') ? 'visible' : 'none')
-    // Polygons
-    map.setLayoutProperty('severe-polygons-fill', 'visibility', lyrs.includes('ts') ? 'visible' : 'none')
-    map.setLayoutProperty('warning-polygons-fill', 'visibility', lyrs.includes('tw') ? 'visible' : 'none')
-    map.setLayoutProperty('alert-polygons-fill', 'visibility', lyrs.includes('ta') ? 'visible' : 'none')
-    // Symbols
-    map.setLayoutProperty('river-stations', 'visibility', lyrs.includes('ri') ? 'visible' : 'none')
-    map.setLayoutProperty('sea-stations', 'visibility', lyrs.includes('se') ? 'visible' : 'none')
-  }
-
   // Add target areas to corresponsing warning layers
   const filterLayerFeatures = () => {
-    const severe = warningData.features.filter(f => f.properties.severity === 1).map(f => f.id)
-    const warnings = warningData.features.filter(f => f.properties.severity === 2).map(f => f.id)
-    const alerts = warningData.features.filter(f => f.properties.severity === 3).map(f => f.id)
+    const sourceFeatures = map.querySourceFeatures('warnings')
+    const severe = [...new Set(sourceFeatures.filter(f => f.properties.severity === 1).map(f => f.id))]
+    const warnings = [...new Set(sourceFeatures.filter(f => f.properties.severity === 2).map(f => f.id))]
+    const alerts = [...new Set(sourceFeatures.filter(f => f.properties.severity === 3).map(f => f.id))]
     // Polygon layers
     map.setFilter('severe-polygons-fill', ['match', ['get', 'id'], severe.length ? severe : '', true, false])
     map.setFilter('warning-polygons-fill', ['match', ['get', 'id'], warnings.length ? warnings : '', true, false])
     map.setFilter('alert-polygons-fill', ['match', ['get', 'id'], alerts.length ? alerts : '', true, false])
+  }
+
+  // Show or hide layers
+  const setLayerVisibility = () => {
+    // Get layers from querystring
+    if (getParameterByName('lyr')) {
+      state.layers = getParameterByName('lyr').split(',')
+      const inputs = document.querySelectorAll('.defra-map-key input')
+      forEach(inputs, (input) => {
+        input.checked = state.layers.includes(input.id)
+      })
+    }
+    // Composite group
+    composite.forEach(layer => {
+      map.setLayoutProperty(layer.id, 'visibility', state.layers.includes('mv') ? 'visible' : 'none')
+    })
+    // Composite custom properties
+    map.setLayoutProperty('country names', 'visibility', 'none')
+    // Aerial
+    map.setLayoutProperty('aerial', 'visibility', state.layers.includes('sv') ? 'visible' : 'none')
+    // Polygons
+    map.setLayoutProperty('severe-polygons-fill', 'visibility', state.layers.includes('ts') ? 'visible' : 'none')
+    map.setLayoutProperty('warning-polygons-fill', 'visibility', state.layers.includes('tw') ? 'visible' : 'none')
+    map.setLayoutProperty('alert-polygons-fill', 'visibility', state.layers.includes('ta') ? 'visible' : 'none')
+    // Symbols
+    map.setLayoutProperty('severe', 'visibility', state.layers.includes('ts') ? 'visible' : 'none')
+    map.setLayoutProperty('warning', 'visibility', state.layers.includes('tw') ? 'visible' : 'none')
+    map.setLayoutProperty('alert', 'visibility', state.layers.includes('ta') ? 'visible' : 'none')
+    map.setLayoutProperty('river-stations', 'visibility', state.layers.includes('ri') ? 'visible' : 'none')
+    map.setLayoutProperty('sea-stations', 'visibility', state.layers.includes('se') ? 'visible' : 'none')
   }
 
   // WebGL: Limited dynamic styling could be done server side
@@ -356,11 +368,11 @@ function LiveMap (mapId, options) {
   // We need to wait for warnings data and style data to load
   // IE11: Could refactor to use async/await with several polyfills
   const initMap = () => {
-    if (!(style && warningData)) { return }
+    if (!style) { return }
     // Add sources
     map.addSource('aerial', maps.style.source.aerial)
     map.addSource('target-areas', maps.style.source['target-areas'])
-    map.addSource('warnings', { type: 'geojson', data: warningData })
+    map.addSource('warnings', maps.style.source.warnings)
     map.addSource('stations', maps.style.source.stations)
     // Add layers
     map.addLayer(maps.style.aerial, composite[0].id)
@@ -369,12 +381,13 @@ function LiveMap (mapId, options) {
     map.addLayer(maps.style['warning-polygons-fill'])
     map.addLayer(maps.style['alert-polygons-fill'], 'road numbers')
     // Point layers
-    map.addLayer(maps.style['river-stations'])
-    map.addLayer(maps.style['sea-stations'])
+    map.addLayer(maps.style.severe)
+    map.addLayer(maps.style.warning, 'severe')
+    map.addLayer(maps.style.alert, 'warning')
+    map.addLayer(maps.style['river-stations'], 'alert')
+    map.addLayer(maps.style['sea-stations'], 'river-stations')
     // Set layer visibility based on query params
-    setLayerVisibility(lyrs)
-    // Add features to specific layers
-    filterLayerFeatures()
+    setLayerVisibility()
     // Set polygon opacity
     setFillOpacity(['severe-polygons-fill', 'warning-polygons-fill', 'alert-polygons-fill'])
   }
@@ -392,16 +405,16 @@ function LiveMap (mapId, options) {
   // State object
   const state = {
     visibleFeatures: [],
-    selectedFeatureId: '',
+    selectedFeature: '',
     initialExt: [],
-    hasOverlays: false
+    layers: []
   }
 
   // Layers
   let composite = null
 
   // We need to get warnings data first as mapbox unlike Openlayers only works with contents of viewport
-  let style, warningData
+  let style
 
   // View
   // const view = new View({
@@ -454,18 +467,6 @@ function LiveMap (mapId, options) {
   const closeInfoButton = container.closeInfoButton
   const openKeyButton = container.openKeyButton
 
-  // map.showCollisionBoxes = true
-
-  // Set layers from querystring
-  let lyrs = []
-  if (getParameterByName('lyr')) {
-    lyrs = getParameterByName('lyr').split(',')
-    const inputs = document.querySelectorAll('.defra-map-key input')
-    forEach(inputs, (input) => {
-      input.checked = lyrs.includes(input.id)
-    })
-  }
-
   // Store extent for use with reset button
   state.initialExt = window.history.state.initialExt || maps.getExtentFromBounds(map.getBounds())
 
@@ -517,14 +518,14 @@ function LiveMap (mapId, options) {
   //   map.addLayer(maps.style['river-levels'])
   // })
 
-  xhr(`${window.location.origin}/service/geojson/warnings`, (err, response) => {
-    if (err) {
-      console.log('Error: ' + err)
-    } else {
-      warningData = response
-      initMap()
-    }
-  }, 'json')
+  // xhr(`${window.location.origin}/service/geojson/warnings`, (err, response) => {
+  //   if (err) {
+  //     console.log('Error: ' + err)
+  //   } else {
+  //     warningData = response
+  //     initMap()
+  //   }
+  // }, 'json')
 
   // xhr(`${window.location.origin}/service/geojson/stations`, (err, response) => {
   //   if (err) {
@@ -556,6 +557,13 @@ function LiveMap (mapId, options) {
         }
       })
     })
+  })
+
+  // Filter target area polygons when warnings source updates
+  map.on('sourcedata', (e) => {
+    if (!(e.sourceId === 'warnings' && map.isSourceLoaded('warnings'))) return
+    // Add features to specific layers
+    filterLayerFeatures()
   })
 
   // Map has finishing drawing so we have the bounds
@@ -682,11 +690,10 @@ function LiveMap (mapId, options) {
   keyElement.addEventListener('click', (e) => {
     if (e.target.nodeName !== 'INPUT') { return }
     e.stopPropagation()
-    lyrs = [...keyElement.querySelectorAll('input')].filter(x => x.checked).map(x => x.id)
-    setLayerVisibility(lyrs)
+    state.layers = [...keyElement.querySelectorAll('input')].filter(x => x.checked).map(x => x.id)
     // targetAreaPolygons.setStyle(maps.styles.targetAreaPolygons)
-    replaceHistory('lyr', lyrs.join(','))
-    // showOverlays()
+    replaceHistory('lyr', state.layers.join(','))
+    setLayerVisibility()
   })
 
   // Clear selectedfeature when info is closed

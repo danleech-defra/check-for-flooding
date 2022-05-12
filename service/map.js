@@ -22,13 +22,14 @@ module.exports = {
     response.forEach(item => {
       features.push({
         type: 'Feature',
-        id: item.id,
+        // id: item.id,
         geometry: item.geometry,
         properties: {
+          id: item.id,
           name: item.name,
           severity: Number(item.severity),
           issuedDate: item.raised_date,
-          type: 'TA'
+          type: 'warning'
         }
       })
     })
