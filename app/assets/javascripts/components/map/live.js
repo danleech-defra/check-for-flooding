@@ -459,7 +459,6 @@ function LiveMap (mapId, options) {
     // zoom: 6,
     // layers: layers,
     queryParamKeys: ['v', 'lyr', 'ext', 'fid'],
-    // interactions: interactions,
     originalTitle: options.originalTitle,
     title: options.title,
     heading: options.heading,
@@ -542,7 +541,7 @@ function LiveMap (mapId, options) {
   // Events
   //
 
-  // Style data has loaded
+  // We need to wait for style data and icons to load before we can initialise the map
   map.once('styledata', () => {
     // Load symbols
     const images = []
@@ -552,19 +551,11 @@ function LiveMap (mapId, options) {
         map.addImage(key, image)
         images.push(key)
         if (images.length === Object.keys(maps.symbols).length) {
-          // Set reference to these layers so we can toggle visibility later
           initMap()
         }
       })
     })
   })
-
-  // Filter target area polygons when warnings source updates
-  // map.on('sourcedata', (e) => {
-  //   if (!(e.sourceId === 'warnings' && map.isSourceLoaded('warnings'))) return
-  //   // Add features to specific layers
-  //   filterLayerFeatures()
-  // })
 
   // Map has finishing drawing so we have the bounds
   map.once('load', toggleReset)
