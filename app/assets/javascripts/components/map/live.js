@@ -37,7 +37,7 @@ function LiveMap (mapId, options) {
 
   // Add target areas to corresponsing warning layers
   const addWarnings = (geojson) => {
-    // Add point data here to save on requests 
+    // Add point data here to save on requests
     map.getSource('warnings').setData(geojson)
     // Polygon layers
     const severe = geojson.features.filter(f => f.properties.severity === 1).map(f => f.properties.id)
@@ -58,11 +58,11 @@ function LiveMap (mapId, options) {
         input.checked = state.layers.includes(input.id)
       })
     }
-    // Composite group
-    composite.forEach(layer => {
+    // Base layer group
+    baseLayers.forEach(layer => {
       map.setLayoutProperty(layer.id, 'visibility', state.layers.includes('mv') ? 'visible' : 'none')
     })
-    // Composite custom properties
+    // Base layer custom properties
     map.setLayoutProperty('country names', 'visibility', 'none')
     // Aerial
     map.setLayoutProperty('aerial', 'visibility', state.layers.includes('sv') ? 'visible' : 'none')
@@ -74,8 +74,8 @@ function LiveMap (mapId, options) {
     map.setLayoutProperty('severe', 'visibility', state.layers.includes('ts') ? 'visible' : 'none')
     map.setLayoutProperty('warning', 'visibility', state.layers.includes('tw') ? 'visible' : 'none')
     map.setLayoutProperty('alert', 'visibility', state.layers.includes('ta') ? 'visible' : 'none')
-    map.setLayoutProperty('river-stations', 'visibility', state.layers.includes('ri') ? 'visible' : 'none')
-    map.setLayoutProperty('sea-stations', 'visibility', state.layers.includes('se') ? 'visible' : 'none')
+    map.setLayoutProperty('river-station', 'visibility', state.layers.includes('ri') ? 'visible' : 'none')
+    map.setLayoutProperty('sea-station', 'visibility', state.layers.includes('se') ? 'visible' : 'none')
   }
 
   // WebGL: Limited dynamic styling could be done server side
@@ -118,39 +118,49 @@ function LiveMap (mapId, options) {
   }
 
   // Set selected feature
-  const setSelectedFeature = (newFeatureId = '') => {
-    // selected.getSource().clear()
-    // dataLayers.forEach((layer) => {
-    //   const originalFeature = layer.getSource().getFeatureById(state.selectedFeatureId)
-    //   const newFeature = layer.getSource().getFeatureById(newFeatureId)
-    //   if (originalFeature) {
-    //     originalFeature.set('isSelected', false)
-    //   }
-    //   if (newFeature) {
-    //     newFeature.set('isSelected', true)
-    //     setFeatureHtml(newFeature)
-    //     selected.getSource().addFeature(newFeature)
-    //     selected.setStyle(maps.styles[layer.get('ref') === 'warnings' ? 'warnings' : 'stations']) // WebGL: layers don't use a style function
-    //     container.showInfo('Selected feature information', newFeature.get('html'))
-    //   }
-    //   // Refresh target area polygons
-    //   if (layer.get('ref') === 'warnings') {
-    //     targetAreaPolygons.setStyle(maps.styles.targetAreaPolygons)
-    //   }
-    //   // Toggle overlay selected state
-    //   if (state.hasOverlays) {
-    //     if (originalFeature && map.getOverlayById(state.selectedFeatureId)) {
-    //       const overlayElement = map.getOverlayById(state.selectedFeatureId).getElement().parentNode
-    //       overlayElement.classList.remove('defra-key-symbol--selected')
-    //     }
-    //     if (newFeature && map.getOverlayById(newFeatureId)) {
-    //       const overlayElement = map.getOverlayById(newFeatureId).getElement().parentNode
-    //       overlayElement.classList.add('defra-key-symbol--selected')
-    //     }
-    //   }
-    // })
-    // state.selectedFeatureId = newFeatureId
-    // // Update url
+  const toggleSelectedFeature = (feature) => {
+    if (map.getLayer('selected')) {
+      map.removeLayer('selected')
+      map.removeSource('selected')
+    }
+    if (feature) {
+      feature.properties.selected = '-selected'
+      console.log(feature)
+      map.addLayer({
+        id: 'selected',
+        type: 'symbol',
+        source: {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [feature] }
+        },
+        layout: {
+          'icon-image': ['step', ['zoom'],
+            ['concat', 'level-', ['get', 'status'], ['get', 'selected']], 10,
+            ['concat', ['get', 'type'], '-', ['get', 'status'], ['get', 'selected']]
+          ],
+          'icon-size': 0.5,
+          'icon-allow-overlap': true,
+          'symbol-sort-key': ['match', ['get', 'latestState'],
+            'high', 3,
+            'normal', 2,
+            'low', 2,
+            1
+          ]
+        }
+      })
+    }
+
+    // console.log(e.point)
+    map.setFeatureState(
+      {
+        source: feature.source,
+        id: feature.id
+      },
+      {
+        isSelected: true
+      }
+    )
+    // console.log(e.features[0])
     // replaceHistory('fid', newFeatureId)
   }
 
@@ -369,14 +379,14 @@ function LiveMap (mapId, options) {
   // We need to wait for style data to load before adding sources and layers
   const initMap = () => {
     // Get a referecne to background layers
-    composite = map.getStyle().layers
+    baseLayers = map.getStyle().layers
     // Add sources
     map.addSource('aerial', maps.style.source.aerial)
     map.addSource('target-areas', maps.style.source['target-areas'])
     map.addSource('warnings', maps.style.source.warnings)
     map.addSource('stations', maps.style.source.stations)
     // Add layers
-    map.addLayer(maps.style.aerial, composite[0].id)
+    map.addLayer(maps.style.aerial, baseLayers[0].id)
     // Polygon layers
     map.addLayer(maps.style['severe-polygons-fill'])
     map.addLayer(maps.style['warning-polygons-fill'])
@@ -385,8 +395,8 @@ function LiveMap (mapId, options) {
     map.addLayer(maps.style.severe)
     map.addLayer(maps.style.warning, 'severe')
     map.addLayer(maps.style.alert, 'warning')
-    map.addLayer(maps.style['river-stations'], 'alert')
-    map.addLayer(maps.style['sea-stations'], 'river-stations')
+    map.addLayer(maps.style['river-station'], 'alert')
+    map.addLayer(maps.style['sea-station'], 'river-station')
     // Add warnings data here so that we have access to all features
     loadGeoJson(`${window.location.origin}/service/geojson/warnings`, addWarnings)
     // Set layer visibility based on query params
@@ -425,7 +435,8 @@ function LiveMap (mapId, options) {
   }
 
   // Layers
-  let composite = null
+  let baseLayers
+  const symbolLayers = ['severe', 'warning', 'alert', 'river-station', 'sea-station']
 
   // View
   // const view = new View({
@@ -654,6 +665,23 @@ function LiveMap (mapId, options) {
         resetButton.removeAttribute('disabled')
       }
     }, 350)
+  })
+
+  // Map click
+  map.on('click', (e) => {
+    const symbolFeatures = map.queryRenderedFeatures(e.point).filter(feature => symbolLayers.includes(feature.layer.id))
+    const feature = symbolFeatures.length ? symbolFeatures[0] : null
+    toggleSelectedFeature(feature)
+  })
+
+  // Change cursor on feature hover
+  symbolLayers.forEach(layer => {
+    map.on('mouseenter', layer, (e) => {
+      map.getCanvas().style.cursor = 'pointer'
+    })
+    map.on('mouseleave', layer, (e) => {
+      map.getCanvas().style.cursor = ''
+    })
   })
 
   // Show cursor when hovering over features

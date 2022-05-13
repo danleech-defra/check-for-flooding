@@ -21,7 +21,8 @@ window.flood.maps.style = {
     },
     stations: {
       type: 'geojson',
-      data: `${window.location.origin}/service/geojson/stations`
+      data: `${window.location.origin}/service/geojson/stations`,
+      promoteId: 'id'
     }
   },
   aerial: {
@@ -125,21 +126,15 @@ window.flood.maps.style = {
     },
     filter: ['==', ['get', 'severity'], 4]
   },
-  'river-stations': {
-    id: 'river-stations',
+  'river-station': {
+    id: 'river-station',
     source: 'stations',
     type: 'symbol',
     layout: {
-      // 'icon-image': ['step', ['zoom'], 'level', 10, 'river'],
       'icon-image': ['step', ['zoom'],
-        ['match', ['get', 'latestState'], 'high', 'level-withrisk', ['match', ['get', 'status'], 'active', 'level', 'level-error']],
-        10,
-        ['match', ['get', 'latestState'], 'high', 'river-high', ['match', ['get', 'status'], 'active', 'river', 'river-error']]
+        ['concat', 'level-', ['get', 'status'], ['get', 'selected']], 10,
+        ['concat', ['get', 'type'], '-', ['get', 'status'], ['get', 'selected']]
       ],
-      // 'icon-image': ['match', ['get', 'latestState'],
-      //   'high', 'river-high',
-      //   ['match', ['get', 'status'], 'active', 'river', 'river-error']
-      // ],
       'icon-size': 0.5,
       'icon-allow-overlap': true,
       'symbol-sort-key': ['match', ['get', 'latestState'],
@@ -151,14 +146,15 @@ window.flood.maps.style = {
     },
     filter: ['==', ['get', 'type'], 'river']
   },
-  'sea-stations': {
-    id: 'sea-stations',
+  'sea-station': {
+    id: 'sea-station',
     source: 'stations',
     type: 'symbol',
     layout: {
-      'icon-image': ['match', ['get', 'status'],
-        'active', 'level',
-        'level-error'
+      'icon-image': ['step', ['zoom'],
+        ['concat', ['get', 'type'], '-', ['get', 'status'], ['get', 'selected']],
+        10,
+        ['concat', 'level-', ['get', 'status'], ['get', 'selected']]
       ],
       'icon-size': 0.5,
       'icon-allow-overlap': true,

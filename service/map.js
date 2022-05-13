@@ -44,7 +44,13 @@ module.exports = {
       SELECT station_id,
       CASE WHEN type = 'tide' AND river_slug IS NOT NULL THEN 'river' WHEN type = 'tide' AND river_slug IS NULL THEN 'sea' ELSE type END AS type,
       rloi_id, lon, lat, is_multi_stage, measure_type,
-      is_wales, latest_state, status, name, river_name, hydrological_catchment_id, hydrological_catchment_name, latest_trend, latest_height, rainfall_1hr, rainfall_6hr, rainfall_24hr, latest_datetime AT TIME ZONE '+00' AS latest_datetime, level_high, level_low, station_up, station_down
+      is_wales, latest_state,
+      CASE
+      WHEN latest_state = 'high' THEN 'withrisk'
+      WHEN type = 'rainfall' AND rainfall_24hr = 0 THEN 'norisk'
+      WHEN status != 'active' THEN 'error'
+      ELSE 'default' END AS status,
+      name, river_name, hydrological_catchment_id, hydrological_catchment_name, latest_trend, latest_height, rainfall_1hr, rainfall_6hr, rainfall_24hr, latest_datetime AT TIME ZONE '+00' AS latest_datetime, level_high, level_low, station_up, station_down
       FROM measure_with_latest;
     `)
     const features = []
@@ -57,6 +63,7 @@ module.exports = {
           coordinates: [item.lon, item.lat]
         },
         properties: {
+          id: item.station_id,
           type: item.type,
           name: item.name,
           river: item.river_name,
