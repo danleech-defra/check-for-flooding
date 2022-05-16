@@ -9,7 +9,7 @@ window.flood.maps.style = {
       type: 'raster',
       tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}']
     },
-    'target-areas': {
+    polygons: {
       type: 'vector',
       tiles: [`${window.location.origin}/service/vector-tiles/{z}/{x}/{y}.pbf`],
       maxzoom: 12
@@ -23,6 +23,10 @@ window.flood.maps.style = {
       type: 'geojson',
       data: `${window.location.origin}/service/geojson/stations`,
       promoteId: 'id'
+    },
+    selected: {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] }
     }
   },
   aerial: {
@@ -33,9 +37,9 @@ window.flood.maps.style = {
       visibility: 'none'
     }
   },
-  'severe-polygons-fill': {
-    id: 'severe-polygons-fill',
-    source: 'target-areas',
+  'target-areas': {
+    id: 'target-areas',
+    source: 'polygons',
     'source-layer': 'targetareas',
     type: 'fill',
     paint: {
@@ -44,90 +48,25 @@ window.flood.maps.style = {
     filter: ['in', 'id', ''],
     minzoom: 10
   },
-  'warning-polygons-fill': {
-    id: 'warning-polygons-fill',
-    source: 'target-areas',
-    'source-layer': 'targetareas',
-    type: 'fill',
-    paint: {
-      'fill-color': '#e3000f'
-    },
-    filter: ['in', 'id', ''],
-    minzoom: 10
-  },
-  'alert-polygons-fill': {
-    id: 'alert-polygons-fill',
-    source: 'target-areas',
-    'source-layer': 'targetareas',
-    type: 'fill',
-    paint: {
-      'fill-color': '#f18700',
-      'fill-opacity': 0.5
-    },
-    filter: ['in', 'id', ''],
-    minzoom: 10
-  },
-  // 'alert-polygons-stroke': {
-  //   id: 'alert-polygons-stroke',
-  //   source: 'target-areas',
-  //   'source-layer': 'targetareas',
-  //   type: 'line',
-  //   'line-join': 'round',
-  //   'line-cap': 'round',
-  //   'line-miter-limit': 10,
-  //   paint: {
-  //     'line-color': '#ffdd00',
-  //     'line-width': 4,
-  //     'line-offset': -2
-  //   },
-  //   filter: ['in', 'id', '']
-  // },
-  severe: {
-    id: 'severe',
+  warnings: {
+    id: 'warnings',
     source: 'warnings',
     type: 'symbol',
     layout: {
-      'icon-image': 'severe',
+      'icon-image': ['concat', ['get', 'status'], ['get', 'selected']],
       'icon-size': 0.5,
-      'icon-allow-overlap': true
+      'icon-allow-overlap': true,
+      'symbol-sort-key': ['match', ['get', 'status'],
+        'severe', 3,
+        'warning', 2,
+        'alert', 1,
+        1
+      ]
     },
-    filter: ['all', ['==', ['get', 'severity'], 1], ['<', ['zoom'], 10]]
+    filter: ['all', ['match', ['get', 'status'], ['severe', 'warning', 'alert'], true, false], ['<', ['zoom'], 10]]
   },
-  warning: {
-    id: 'warning',
-    source: 'warnings',
-    type: 'symbol',
-    layout: {
-      'icon-image': 'warning',
-      'icon-size': 0.5,
-      'icon-allow-overlap': true
-    },
-    filter: ['all', ['==', ['get', 'severity'], 2], ['<', ['zoom'], 10]]
-  },
-  alert: {
-    id: 'alert',
-    source: 'warnings',
-    type: 'symbol',
-    layout: {
-      'icon-image': 'alert',
-      'icon-size': 0.5,
-      'icon-allow-overlap': true
-    },
-    filter: ['all', ['==', ['get', 'severity'], 3], ['<', ['zoom'], 10]]
-  },
-  removed: {
-    id: 'removed',
-    source: 'warnings',
-    type: 'symbol',
-    layout: {
-      'icon-image': 'removed',
-      'icon-size': 0.5,
-      'icon-allow-overlap': true
-    },
-    filter: ['==', ['get', 'severity'], 4]
-  },
-  'river-station': {
-    id: 'river-station',
+  stations: {
+    id: 'stations',
     source: 'stations',
     type: 'symbol',
     layout: {
@@ -143,26 +82,15 @@ window.flood.maps.style = {
         'low', 2,
         1
       ]
-    },
-    filter: ['==', ['get', 'type'], 'river']
+    }
   },
-  'sea-station': {
-    id: 'sea-station',
-    source: 'stations',
+  selected: {
+    id: 'selected',
+    source: 'selected',
     type: 'symbol',
     layout: {
-      'icon-image': ['step', ['zoom'],
-        ['concat', ['get', 'type'], '-', ['get', 'status'], ['get', 'selected']],
-        10,
-        ['concat', 'level-', ['get', 'status'], ['get', 'selected']]
-      ],
       'icon-size': 0.5,
-      'icon-allow-overlap': true,
-      'symbol-sort-key': ['match', ['get', 'status'],
-        'active', 2,
-        1
-      ]
-    },
-    filter: ['==', ['get', 'type'], 'sea']
+      'icon-allow-overlap': true
+    }
   }
 }

@@ -13,9 +13,13 @@ module.exports = {
   },
   getWarningsGeoJSON: async () => {
     const response = await db.query(`
-    SELECT warning.id, ST_AsGeoJSON(ST_Centroid(geom))::JSONB AS geometry, warning.name, warning.severity, warning.raised_date AT TIME ZONE '+00' AS raised_date
+    SELECT warning.id, ST_AsGeoJSON(ST_Centroid(geom))::JSONB AS geometry, warning.name,
+    CASE WHEN warning.severity = 1 THEN 'severe' WHEN warning.severity = 2 THEN 'warning' WHEN warning.severity = 3 THEN 'alert' ELSE 'removed' END AS status,
+    warning.raised_date AT TIME ZONE '+00' AS raised_date
     FROM warning JOIN flood_warning_areas ON flood_warning_areas.fws_tacode = warning.id UNION
-    SELECT warning.id, ST_AsGeoJSON(ST_Centroid(geom))::JSONB AS geometry, warning.name, warning.severity, warning.raised_date AT TIME ZONE '+00' AS raised_date
+    SELECT warning.id, ST_AsGeoJSON(ST_Centroid(geom))::JSONB AS geometry, warning.name,
+    CASE WHEN warning.severity = 1 THEN 'severe' WHEN warning.severity = 2 THEN 'warning' WHEN warning.severity = 3 THEN 'alert' ELSE 'removed' END AS status,
+    warning.raised_date AT TIME ZONE '+00' AS raised_date
     FROM warning JOIN flood_alert_areas ON flood_alert_areas.fws_tacode = warning.id;
     `)
     const features = []
@@ -26,10 +30,10 @@ module.exports = {
         geometry: item.geometry,
         properties: {
           id: item.id,
+          type: 'targetarea',
           name: item.name,
-          severity: Number(item.severity),
-          issuedDate: item.raised_date,
-          type: 'warning'
+          status: item.status,
+          issuedDate: item.raised_date
         }
       })
     })
@@ -42,7 +46,7 @@ module.exports = {
   getStationsGeoJSON: async () => {
     const response = await db.query(`
       SELECT station_id,
-      CASE WHEN type = 'tide' AND river_slug IS NOT NULL THEN 'river' WHEN type = 'tide' AND river_slug IS NULL THEN 'sea' ELSE type END AS type,
+      CASE WHEN type = 'tide' AND river_slug IS NOT NULL THEN 'river' WHEN type = 'tide' AND river_slug IS NULL THEN 'sea' WHEN type = 'rainfall' THEN 'rain' ELSE type END AS type,
       rloi_id, lon, lat, is_multi_stage, measure_type,
       is_wales, latest_state,
       CASE
@@ -67,8 +71,6 @@ module.exports = {
           type: item.type,
           name: item.name,
           river: item.river_name,
-          // catchmentId: item.hydrological_catchment_id,
-          // catchmentName: item.hydrological_catchment_name,
           status: item.status,
           value1hr: item.rainfall_1hr,
           value6hr: item.rainfall_6hr,
@@ -77,8 +79,6 @@ module.exports = {
           latestTrend: item.trend,
           latestState: item.latest_state,
           latestDate: item.latest_datetime,
-          // levelHigh: item.level_high,
-          // levelLow: item.level_low,
           stationUp: item.station_up,
           stationDown: item.station_down,
           isMultiStage: item.is_multi_stage,

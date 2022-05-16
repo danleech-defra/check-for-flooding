@@ -39,17 +39,12 @@ function LiveMap (mapId, options) {
   const addWarnings = (geojson) => {
     // Add point data here to save on requests
     map.getSource('warnings').setData(geojson)
-    // Polygon layers
-    const severe = geojson.features.filter(f => f.properties.severity === 1).map(f => f.properties.id)
-    const warnings = geojson.features.filter(f => f.properties.severity === 2).map(f => f.properties.id)
-    const alerts = geojson.features.filter(f => f.properties.severity === 3).map(f => f.properties.id)
-    map.setFilter('severe-polygons-fill', ['match', ['get', 'id'], severe.length ? severe : '', true, false])
-    map.setFilter('warning-polygons-fill', ['match', ['get', 'id'], warnings.length ? warnings : '', true, false])
-    map.setFilter('alert-polygons-fill', ['match', ['get', 'id'], alerts.length ? alerts : '', true, false])
+    const warnings = geojson.features.filter(f => ['severe', 'warning', 'alert'].includes(f.properties.status)).map(f => f.properties.id)
+    map.setFilter('target-areas', ['match', ['get', 'id'], warnings.length ? warnings : '', true, false])
   }
 
   // Show or hide layers
-  const setLayerVisibility = () => {
+  const setFeatureVisibility = () => {
     // Get layers from querystring
     if (getParameterByName('lyr')) {
       state.layers = getParameterByName('lyr').split(',')
@@ -67,99 +62,37 @@ function LiveMap (mapId, options) {
     // Aerial
     map.setLayoutProperty('aerial', 'visibility', state.layers.includes('sv') ? 'visible' : 'none')
     // Polygons
-    map.setLayoutProperty('severe-polygons-fill', 'visibility', state.layers.includes('ts') ? 'visible' : 'none')
-    map.setLayoutProperty('warning-polygons-fill', 'visibility', state.layers.includes('tw') ? 'visible' : 'none')
-    map.setLayoutProperty('alert-polygons-fill', 'visibility', state.layers.includes('ta') ? 'visible' : 'none')
+    // map.setLayoutProperty('severe-polygons-fill', 'visibility', state.layers.includes('ts') ? 'visible' : 'none')
+    // map.setLayoutProperty('warning-polygons-fill', 'visibility', state.layers.includes('tw') ? 'visible' : 'none')
+    // map.setLayoutProperty('alert-polygons-fill', 'visibility', state.layers.includes('ta') ? 'visible' : 'none')
     // Symbols
-    map.setLayoutProperty('severe', 'visibility', state.layers.includes('ts') ? 'visible' : 'none')
-    map.setLayoutProperty('warning', 'visibility', state.layers.includes('tw') ? 'visible' : 'none')
-    map.setLayoutProperty('alert', 'visibility', state.layers.includes('ta') ? 'visible' : 'none')
-    map.setLayoutProperty('river-station', 'visibility', state.layers.includes('ri') ? 'visible' : 'none')
-    map.setLayoutProperty('sea-station', 'visibility', state.layers.includes('se') ? 'visible' : 'none')
-  }
-
-  // WebGL: Limited dynamic styling could be done server side
-  const setFeatueState = (layer) => {
-    // layer.getSource().forEachFeature((feature) => {
-    //   const props = feature.getProperties()
-    //   let state = ''
-    //   if (['S', 'M', 'G'].includes(props.type)) {
-    //     // River or groundwater
-    //     if (props.status === 'Suspended' || props.status === 'Closed' || (!props.value && !props.iswales)) {
-    //       state = props.type === 'G' ? 'groundError' : 'riverError'
-    //     } else if (props.value && props.atrisk && props.type !== 'C' && !props.iswales) {
-    //       state = props.type === 'G' ? 'groundHigh' : 'riverHigh'
-    //     } else {
-    //       state = props.type === 'G' ? 'ground' : 'river'
-    //     }
-    //   } else if (props.type === 'C') {
-    //     // Tide
-    //     if (props.status === 'Suspended' || props.status === 'Closed' || (!props.value && !props.iswales)) {
-    //       state = 'tideError'
-    //     } else {
-    //       state = 'tide'
-    //     }
-    //   } else if (props.type === 'R') {
-    //     // Rainfall
-    //     state = 'rain'
-    //     if (props.value1hr) {
-    //       if (props.value1hr > 4) {
-    //         state = 'rainHeavy'
-    //       } else if (props.value1hr > 0.5) {
-    //         state = 'rainModerate'
-    //       } else if (props.value1hr > 0) {
-    //         state = 'rainLight'
-    //       }
-    //     }
-    //   }
-    //   // WebGl: Feature properties must be strings or numbers
-    //   feature.set('state', state)
-    // })
+    // map.setLayoutProperty('severe', 'visibility', state.layers.includes('ts') ? 'visible' : 'none')
+    // map.setLayoutProperty('warning', 'visibility', state.layers.includes('tw') ? 'visible' : 'none')
+    // map.setLayoutProperty('alert', 'visibility', state.layers.includes('ta') ? 'visible' : 'none')
+    // map.setLayoutProperty('river-station', 'visibility', state.layers.includes('ri') ? 'visible' : 'none')
+    // map.setLayoutProperty('sea-station', 'visibility', state.layers.includes('se') ? 'visible' : 'none')
   }
 
   // Set selected feature
   const toggleSelectedFeature = (feature) => {
-    if (map.getLayer('selected')) {
-      map.removeLayer('selected')
-      map.removeSource('selected')
-    }
     if (feature) {
       feature.properties.selected = '-selected'
-      console.log(feature)
-      map.addLayer({
-        id: 'selected',
-        type: 'symbol',
-        source: {
-          type: 'geojson',
-          data: { type: 'FeatureCollection', features: [feature] }
-        },
-        layout: {
-          'icon-image': ['step', ['zoom'],
-            ['concat', 'level-', ['get', 'status'], ['get', 'selected']], 10,
-            ['concat', ['get', 'type'], '-', ['get', 'status'], ['get', 'selected']]
-          ],
-          'icon-size': 0.5,
-          'icon-allow-overlap': true,
-          'symbol-sort-key': ['match', ['get', 'latestState'],
-            'high', 3,
-            'normal', 2,
-            'low', 2,
-            1
-          ]
-        }
-      })
+      map.getSource('selected').setData({ type: 'FeatureCollection', features: [feature] })
+      map.setLayoutProperty('selected', 'icon-image', map.getLayoutProperty(feature.layer.id, 'icon-image'))
+    } else {
+      map.getSource('selected').setData({ type: 'FeatureCollection', features: [] })
     }
 
     // console.log(e.point)
-    map.setFeatureState(
-      {
-        source: feature.source,
-        id: feature.id
-      },
-      {
-        isSelected: true
-      }
-    )
+    // map.setFeatureState(
+    //   {
+    //     source: feature.source,
+    //     id: feature.id
+    //   },
+    //   {
+    //     isSelected: true
+    //   }
+    // )
     // console.log(e.features[0])
     // replaceHistory('fid', newFeatureId)
   }
@@ -382,27 +315,24 @@ function LiveMap (mapId, options) {
     baseLayers = map.getStyle().layers
     // Add sources
     map.addSource('aerial', maps.style.source.aerial)
-    map.addSource('target-areas', maps.style.source['target-areas'])
+    map.addSource('polygons', maps.style.source.polygons)
     map.addSource('warnings', maps.style.source.warnings)
     map.addSource('stations', maps.style.source.stations)
+    map.addSource('selected', maps.style.source.selected)
     // Add layers
     map.addLayer(maps.style.aerial, baseLayers[0].id)
-    // Polygon layers
-    map.addLayer(maps.style['severe-polygons-fill'])
-    map.addLayer(maps.style['warning-polygons-fill'])
-    map.addLayer(maps.style['alert-polygons-fill'], 'road numbers')
-    // Point layers
-    map.addLayer(maps.style.severe)
-    map.addLayer(maps.style.warning, 'severe')
-    map.addLayer(maps.style.alert, 'warning')
-    map.addLayer(maps.style['river-station'], 'alert')
-    map.addLayer(maps.style['sea-station'], 'river-station')
+    // Target areas
+    map.addLayer(maps.style['target-areas'], 'road numbers')
+    // Points
+    map.addLayer(maps.style.warnings)
+    map.addLayer(maps.style.stations, 'warnings')
+    map.addLayer(maps.style.selected)
     // Add warnings data here so that we have access to all features
     loadGeoJson(`${window.location.origin}/service/geojson/warnings`, addWarnings)
     // Set layer visibility based on query params
-    setLayerVisibility()
+    setFeatureVisibility()
     // Set polygon opacity
-    setFillOpacity(['severe-polygons-fill', 'warning-polygons-fill', 'alert-polygons-fill'])
+    setFillOpacity(['target-areas'])
   }
 
   // A helper method to load geojson at runtime
@@ -436,7 +366,7 @@ function LiveMap (mapId, options) {
 
   // Layers
   let baseLayers
-  const symbolLayers = ['severe', 'warning', 'alert', 'river-station', 'sea-station']
+  const symbolLayers = ['warnings', 'stations']
 
   // View
   // const view = new View({
@@ -670,6 +600,7 @@ function LiveMap (mapId, options) {
   // Map click
   map.on('click', (e) => {
     const symbolFeatures = map.queryRenderedFeatures(e.point).filter(feature => symbolLayers.includes(feature.layer.id))
+    console.log(symbolFeatures)
     const feature = symbolFeatures.length ? symbolFeatures[0] : null
     toggleSelectedFeature(feature)
   })
@@ -723,7 +654,7 @@ function LiveMap (mapId, options) {
     state.layers = [...keyElement.querySelectorAll('input')].filter(x => x.checked).map(x => x.id)
     // targetAreaPolygons.setStyle(maps.styles.targetAreaPolygons)
     replaceHistory('lyr', state.layers.join(','))
-    setLayerVisibility()
+    setFeatureVisibility()
   })
 
   // Clear selectedfeature when info is closed
