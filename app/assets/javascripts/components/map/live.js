@@ -78,7 +78,7 @@ function LiveMap (mapId, options) {
     if (feature) {
       feature.properties.selected = '-selected'
       map.getSource('selected').setData({ type: 'FeatureCollection', features: [feature] })
-      map.setLayoutProperty('selected', 'icon-image', map.getLayoutProperty(feature.layer.id, 'icon-image'))
+      map.setLayoutProperty('selected', 'icon-image', map.getLayoutProperty(feature.layer.id, 'icon-image'), { validate: false })
     } else {
       map.getSource('selected').setData({ type: 'FeatureCollection', features: [] })
     }
@@ -324,8 +324,8 @@ function LiveMap (mapId, options) {
     // Target areas
     map.addLayer(maps.style['target-areas'], 'road numbers')
     // Points
+    map.addLayer(maps.style.stations)
     map.addLayer(maps.style.warnings)
-    map.addLayer(maps.style.stations, 'warnings')
     map.addLayer(maps.style.selected)
     // Add warnings data here so that we have access to all features
     loadGeoJson(`${window.location.origin}/service/geojson/warnings`, addWarnings)
@@ -366,7 +366,7 @@ function LiveMap (mapId, options) {
 
   // Layers
   let baseLayers
-  const symbolLayers = ['warnings', 'stations']
+  const symbolLayers = ['stations', 'warnings']
 
   // View
   // const view = new View({
@@ -487,6 +487,16 @@ function LiveMap (mapId, options) {
     // Load symbols
     const images = []
     Object.keys(maps.symbols).forEach(key => {
+      // const icon = new window.Image(30, 30)
+      // icon.onload = () => {
+      //   map.addImage(key, icon)
+      //   console.log(icon)
+      //   images.push(key)
+      // }
+      // icon.src = `data:image/svg+xml;base64,${window.btoa(maps.symbols[key])}`
+      // if (images.length === Object.keys(maps.symbols).length) {
+      //   initMap()
+      // }
       map.loadImage(`data:image/png;base64,${maps.symbols[key]}`, (error, image) => {
         if (error) throw error
         map.addImage(key, image)
@@ -599,8 +609,7 @@ function LiveMap (mapId, options) {
 
   // Map click
   map.on('click', (e) => {
-    const symbolFeatures = map.queryRenderedFeatures(e.point).filter(feature => symbolLayers.includes(feature.layer.id))
-    console.log(symbolFeatures)
+    const symbolFeatures = map.queryRenderedFeatures(e.point, { layers: symbolLayers, validate: false })
     const feature = symbolFeatures.length ? symbolFeatures[0] : null
     toggleSelectedFeature(feature)
   })

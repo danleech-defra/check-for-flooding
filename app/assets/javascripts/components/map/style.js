@@ -56,6 +56,8 @@ window.flood.maps.style = {
       'icon-image': ['concat', ['get', 'status'], ['get', 'selected']],
       'icon-size': 0.5,
       'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
+      'symbol-z-order': 'source',
       'symbol-sort-key': ['match', ['get', 'status'],
         'severe', 3,
         'warning', 2,
@@ -76,10 +78,13 @@ window.flood.maps.style = {
       ],
       'icon-size': 0.5,
       'icon-allow-overlap': true,
-      'symbol-sort-key': ['match', ['get', 'latestState'],
-        'high', 3,
-        'normal', 2,
-        'low', 2,
+      'icon-ignore-placement': true,
+      'symbol-z-order': 'source',
+      'symbol-sort-key': ['match', ['get', 'status'],
+        'withrisk', 4,
+        'default', 3,
+        'norisk', 2,
+        'error', 1,
         1
       ]
     }
@@ -90,7 +95,8 @@ window.flood.maps.style = {
     type: 'symbol',
     layout: {
       'icon-size': 0.5,
-      'icon-allow-overlap': true
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true
     }
   }
 }

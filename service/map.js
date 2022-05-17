@@ -13,14 +13,14 @@ module.exports = {
   },
   getWarningsGeoJSON: async () => {
     const response = await db.query(`
-    SELECT warning.id, ST_AsGeoJSON(ST_Centroid(geom))::JSONB AS geometry, warning.name,
+    SELECT * FROM (SELECT warning.id, ST_AsGeoJSON(ST_Centroid(geom))::JSONB AS geometry, warning.name,
     CASE WHEN warning.severity = 1 THEN 'severe' WHEN warning.severity = 2 THEN 'warning' WHEN warning.severity = 3 THEN 'alert' ELSE 'removed' END AS status,
-    warning.raised_date AT TIME ZONE '+00' AS raised_date
+    warning.raised_date AT TIME ZONE '+00' AS raised_date, warning.severity
     FROM warning JOIN flood_warning_areas ON flood_warning_areas.fws_tacode = warning.id UNION
     SELECT warning.id, ST_AsGeoJSON(ST_Centroid(geom))::JSONB AS geometry, warning.name,
     CASE WHEN warning.severity = 1 THEN 'severe' WHEN warning.severity = 2 THEN 'warning' WHEN warning.severity = 3 THEN 'alert' ELSE 'removed' END AS status,
-    warning.raised_date AT TIME ZONE '+00' AS raised_date
-    FROM warning JOIN flood_alert_areas ON flood_alert_areas.fws_tacode = warning.id;
+    warning.raised_date AT TIME ZONE '+00' AS raised_date, warning.severity
+    FROM warning JOIN flood_alert_areas ON flood_alert_areas.fws_tacode = warning.id) q ORDER BY q.severity DESC;
     `)
     const features = []
     response.forEach(item => {
@@ -55,7 +55,13 @@ module.exports = {
       WHEN status != 'active' THEN 'error'
       ELSE 'default' END AS status,
       name, river_name, hydrological_catchment_id, hydrological_catchment_name, latest_trend, latest_height, rainfall_1hr, rainfall_6hr, rainfall_24hr, latest_datetime AT TIME ZONE '+00' AS latest_datetime, level_high, level_low, station_up, station_down
-      FROM measure_with_latest;
+      FROM measure_with_latest
+      ORDER BY CASE
+      WHEN latest_state = 'high' THEN 1
+      WHEN type = 'rainfall' AND rainfall_24hr = 0 THEN 3
+      WHEN type = 'rainfall' THEN 4
+      WHEN status != 'active' THEN 5
+      ELSE 2 END DESC;
     `)
     const features = []
     response.forEach(item => {
