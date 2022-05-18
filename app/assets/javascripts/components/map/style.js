@@ -12,7 +12,8 @@ window.flood.maps.style = {
     polygons: {
       type: 'vector',
       tiles: [`${window.location.origin}/service/vector-tiles/{z}/{x}/{y}.pbf`],
-      maxzoom: 12
+      maxzoom: 12,
+      promoteId: 'id'
     },
     warnings: {
       type: 'geojson',
@@ -43,7 +44,7 @@ window.flood.maps.style = {
     'source-layer': 'targetareas',
     type: 'fill',
     paint: {
-      'fill-color': ['match', ['get', 'status'],
+      'fill-color': ['match', ['feature-state', 'status'],
         'severe', '#D4351C',
         'warning', '#D4351C',
         'alert', '#F47738',

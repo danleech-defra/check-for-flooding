@@ -44,21 +44,16 @@ function LiveMap (mapId, options) {
     setFeatureVisibility()
   }
 
-  // Set feature state for taget area polygons
+  // Set feature state for target area polygons
   const setFeatureState = () => {
-    const features = map.querySourceFeatures('polygons', { validate: false })
-    console.log(features)
-    // features.forEach(feature => {
-    //   const warning = state.warnings.find(f => f.id === feature.id)
-    //   console.log(warning)
-    //   map.setFeatureState({
-    //     source: 'warnings',
-    //     id: feature.id
-    //   },
-    //   {
-    //     status: warning.properties.status
-    //   })
-    // })
+    const features = map.queryRenderedFeatures(null, { layers: ['target-areas'], validate: false })
+    features.forEach(f => {
+      const warning = state.warnings.find(w => w.properties.id === f.id)
+      map.setFeatureState(
+        { source: 'polygons', sourceLayer: 'targetareas', id: f.properties.id },
+        { status: warning.properties.status }
+      )
+    })
   }
 
   // Show or hide layers or features within layers
@@ -68,9 +63,7 @@ function LiveMap (mapId, options) {
       state.layers = getParameterByName('lyr').split(',')
       // Set key input states
       const inputs = document.querySelectorAll('.defra-map-key input')
-      forEach(inputs, (input) => {
-        input.checked = state.layers.includes(input.id)
-      })
+      forEach(inputs, (input) => { input.checked = state.layers.includes(input.id) })
     }
     // Base layer group
     baseLayers.forEach(layer => {
@@ -527,9 +520,8 @@ function LiveMap (mapId, options) {
   })
 
   // Target areas loaded so we can set the feature state
-  map.on('data', (e) => {
-    console.log(e)
-    if (!(e.sourceId === 'polygons' && e.isSourceLoaded)) return
+  map.on('sourcedata', (e) => {
+    if (e.sourceId !== 'polygons' && !e.isSourceLoaded) return
     setFeatureState()
   })
 
