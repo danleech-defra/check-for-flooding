@@ -43,7 +43,12 @@ window.flood.maps.style = {
     'source-layer': 'targetareas',
     type: 'fill',
     paint: {
-      'fill-color': '#e3000f'
+      'fill-color': ['match', ['get', 'status'],
+        'severe', '#D4351C',
+        'warning', '#D4351C',
+        'alert', '#F47738',
+        '#626A6E'
+      ]
     },
     filter: ['in', 'id', ''],
     minzoom: 10

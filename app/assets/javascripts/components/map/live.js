@@ -44,7 +44,24 @@ function LiveMap (mapId, options) {
     setFeatureVisibility()
   }
 
-  // Show or hide layers
+  // Set feature state for taget area polygons
+  const setFeatureState = () => {
+    const features = map.querySourceFeatures('polygons', { validate: false })
+    console.log(features)
+    // features.forEach(feature => {
+    //   const warning = state.warnings.find(f => f.id === feature.id)
+    //   console.log(warning)
+    //   map.setFeatureState({
+    //     source: 'warnings',
+    //     id: feature.id
+    //   },
+    //   {
+    //     status: warning.properties.status
+    //   })
+    // })
+  }
+
+  // Show or hide layers or features within layers
   const setFeatureVisibility = () => {
     // Get layers from querystring
     if (getParameterByName('lyr')) {
@@ -507,6 +524,13 @@ function LiveMap (mapId, options) {
         })
       })
     })
+  })
+
+  // Target areas loaded so we can set the feature state
+  map.on('data', (e) => {
+    console.log(e)
+    if (!(e.sourceId === 'polygons' && e.isSourceLoaded)) return
+    setFeatureState()
   })
 
   // Map has finishing drawing so we have the bounds
