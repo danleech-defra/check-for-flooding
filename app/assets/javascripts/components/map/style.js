@@ -64,8 +64,7 @@ window.flood.maps.style = {
         'alert', 1,
         1
       ]
-    },
-    filter: ['all', ['match', ['get', 'status'], ['severe', 'warning', 'alert'], true, false], ['<', ['zoom'], 10]]
+    }
   },
   stations: {
     id: 'stations',

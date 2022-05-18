@@ -4,6 +4,7 @@
 // and other layers in the future e.g. Impacts.
 
 // It uses the MapContainer
+import mapSymbols from './map-symbols.png'
 import { LngLatBounds, LngLat } from 'maplibre-gl'
 
 const { addOrUpdateParameter, getParameterByName, forEach, xhr } = window.flood.utils
@@ -39,8 +40,8 @@ function LiveMap (mapId, options) {
   const addWarnings = (geojson) => {
     // Add point data here to save on requests
     map.getSource('warnings').setData(geojson)
-    const warnings = geojson.features.filter(f => ['severe', 'warning', 'alert'].includes(f.properties.status)).map(f => f.properties.id)
-    map.setFilter('target-areas', ['match', ['get', 'id'], warnings.length ? warnings : '', true, false])
+    state.warnings = geojson.features.filter(f => f.properties.status !== 'removed')
+    setFeatureVisibility()
   }
 
   // Show or hide layers
@@ -48,6 +49,7 @@ function LiveMap (mapId, options) {
     // Get layers from querystring
     if (getParameterByName('lyr')) {
       state.layers = getParameterByName('lyr').split(',')
+      // Set key input states
       const inputs = document.querySelectorAll('.defra-map-key input')
       forEach(inputs, (input) => {
         input.checked = state.layers.includes(input.id)
@@ -61,16 +63,13 @@ function LiveMap (mapId, options) {
     map.setLayoutProperty('country names', 'visibility', 'none')
     // Aerial
     map.setLayoutProperty('aerial', 'visibility', state.layers.includes('sv') ? 'visible' : 'none')
-    // Polygons
-    // map.setLayoutProperty('severe-polygons-fill', 'visibility', state.layers.includes('ts') ? 'visible' : 'none')
-    // map.setLayoutProperty('warning-polygons-fill', 'visibility', state.layers.includes('tw') ? 'visible' : 'none')
-    // map.setLayoutProperty('alert-polygons-fill', 'visibility', state.layers.includes('ta') ? 'visible' : 'none')
-    // Symbols
-    // map.setLayoutProperty('severe', 'visibility', state.layers.includes('ts') ? 'visible' : 'none')
-    // map.setLayoutProperty('warning', 'visibility', state.layers.includes('tw') ? 'visible' : 'none')
-    // map.setLayoutProperty('alert', 'visibility', state.layers.includes('ta') ? 'visible' : 'none')
-    // map.setLayoutProperty('river-station', 'visibility', state.layers.includes('ri') ? 'visible' : 'none')
-    // map.setLayoutProperty('sea-station', 'visibility', state.layers.includes('se') ? 'visible' : 'none')
+    // Stations
+    const types = Object.keys(layersConfig).filter(k => state.layers.includes(layersConfig[k]))
+    map.setFilter('warnings', ['all', ['match', ['get', 'status'], types.length ? types : '', true, false], ['<', ['zoom'], 10]])
+    map.setFilter('stations', ['match', ['get', 'type'], types.length ? types : '', true, false])
+    // Warnings
+    const warnings = state.warnings.filter(w => state.layers.includes(layersConfig[w.properties.status])).map(f => f.properties.id)
+    map.setFilter('target-areas', ['match', ['get', 'id'], warnings.length ? warnings : '', true, false])
   }
 
   // Set selected feature
@@ -327,10 +326,8 @@ function LiveMap (mapId, options) {
     map.addLayer(maps.style.stations)
     map.addLayer(maps.style.warnings)
     map.addLayer(maps.style.selected)
-    // Add warnings data here so that we have access to all features
+    // Add warnings data here so that we have access features outside viewport
     loadGeoJson(`${window.location.origin}/service/geojson/warnings`, addWarnings)
-    // Set layer visibility based on query params
-    setFeatureVisibility()
     // Set polygon opacity
     setFillOpacity(['target-areas'])
   }
@@ -356,8 +353,12 @@ function LiveMap (mapId, options) {
   // Optional target area features
   const targetArea = null
 
+  // COnst layers config
+  const layersConfig = { default: 'mv', aerial: 'ms', severe: 'ts', warning: 'tw', alert: 'ta', removed: 'tr', river: 'ri', sea: 'se', groundwater: 'gr', rain: 'rf' }
+
   // State object
   const state = {
+    warnings: [],
     visibleFeatures: [],
     selectedFeature: '',
     initialExt: [],
@@ -484,40 +485,29 @@ function LiveMap (mapId, options) {
 
   // We need to wait for style data and icons to load before we can initialise the map
   map.once('styledata', () => {
-    // Load symbols
+    // Create multiple images from one sprite file
     const images = []
-    Object.keys(maps.symbols).forEach(key => {
-      // const icon = new window.Image(30, 30)
-      // icon.onload = () => {
-      //   map.addImage(key, icon)
-      //   console.log(icon)
-      //   images.push(key)
-      // }
-      // icon.src = `data:image/svg+xml;base64,${window.btoa(maps.symbols[key])}`
-      // if (images.length === Object.keys(maps.symbols).length) {
-      //   initMap()
-      // }
-      map.loadImage(`data:image/png;base64,${maps.symbols[key]}`, (error, image) => {
+    map.loadImage(mapSymbols, (error, sprite) => {
+      Object.keys(maps.symbols).forEach(key => {
+        const pos = maps.symbols[key]
         if (error) throw error
-        map.addImage(key, image)
-        images.push(key)
-        if (images.length === Object.keys(maps.symbols).length) {
-          initMap()
-        }
+        const canvas = document.createElement('canvas')
+        const context = canvas.getContext('2d')
+        context.canvas.width = pos.size
+        context.canvas.height = pos.size
+        context.drawImage(sprite, pos.left, pos.top, pos.size, pos.size, 0, 0, pos.size, pos.size)
+        const symbol = canvas.toDataURL('img/png')
+        map.loadImage(symbol, (error, image) => {
+          if (error) throw error
+          map.addImage(key, image)
+          images.push(key)
+          if (images.length === Object.keys(maps.symbols).length) {
+            initMap()
+          }
+        })
       })
     })
   })
-
-  // Style redraw bug (changing icon on zoom) requires redraw
-  // let zoom = map.getZoom()
-  // map.on('render', (e) => {
-  //   if ((zoom > 10 && map.getZoom() < 10) || (zoom < 10 && map.getZoom() > 10)) {
-  //     console.log('refresh')
-  //     console.log(zoom, map.getZoom())
-  //   }
-  //   zoom = map.getZoom()
-  //   // setStyle
-  // })
 
   // Map has finishing drawing so we have the bounds
   map.once('load', toggleReset)
