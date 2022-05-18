@@ -320,8 +320,11 @@ function LiveMap (mapId, options) {
 
   // We need to wait for style data to load before adding sources and layers
   const initMap = () => {
-    // Get a referecne to background layers
+    // Get a reference to background layers
     baseLayers = map.getStyle().layers
+    map.moveLayer('buildings 2D', 'surfacewater shadow')
+    map.moveLayer('buildings 3D', 'surfacewater shadow')
+    console.log(baseLayers)
     // Add sources
     map.addSource('aerial', maps.style.source.aerial)
     map.addSource('polygons', maps.style.source.polygons)
@@ -331,7 +334,7 @@ function LiveMap (mapId, options) {
     // Add layers
     map.addLayer(maps.style.aerial, baseLayers[0].id)
     // Target areas
-    map.addLayer(maps.style['target-areas'], 'road numbers')
+    map.addLayer(maps.style['target-areas'], 'surfacewater shadow')
     // Points
     map.addLayer(maps.style.stations)
     map.addLayer(maps.style.warnings)
@@ -519,7 +522,7 @@ function LiveMap (mapId, options) {
     })
   })
 
-  // Target areas loaded so we can set the feature state
+  // Whenever new target areas are loaded we set status from the appropriate warning
   map.on('sourcedata', (e) => {
     if (e.sourceId !== 'polygons' && !e.isSourceLoaded) return
     setFeatureState()
