@@ -401,6 +401,8 @@ function LiveMap (mapId, options) {
     ext = maps.cleanExtent(ext.split(','))
   } else if (options.extent && options.extent.length) {
     ext = maps.cleanExtent(options.extent)
+  } else if (options.centre) {
+    ext = null
   } else {
     ext = maps.extent
   }
@@ -409,9 +411,8 @@ function LiveMap (mapId, options) {
   const containerOptions = {
     maxBigZoom: maps.liveMaxBigZoom,
     bounds: ext,
-    // centre: maps.centre,
-    // zoom: 6,
-    // layers: layers,
+    centre: options.centre,
+    zoom: 10,
     queryParamKeys: ['v', 'lyr', 'ext', 'fid'],
     originalTitle: options.originalTitle,
     title: options.title,

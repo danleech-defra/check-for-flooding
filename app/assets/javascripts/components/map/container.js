@@ -417,14 +417,13 @@ window.flood.maps.MapContainer = function MapContainer (mapId, options) {
     // style: 'https://api.os.uk/maps/vector/v1/vts/resources/styles?key=4flNisK69QG6w6NGkDZ4CZz0CObcUA5h',
     attributionControl: false,
     container: 'viewport',
+    center: options.centre,
     bounds: options.bounds,
     touchZoomRotate: false,
     dragRotate: false,
     minZoom: 6,
-    maxZoom: 16
-    // center: options.centre,
-    // zoom: options.zoom,
-    // interactive: false
+    maxZoom: 16,
+    zoom: options.zoom
     // transformRequest: url => {
     //   url += '&srs=3857'
     //   return {
