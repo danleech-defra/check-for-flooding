@@ -14,11 +14,11 @@ module.exports = {
   getWarningsGeoJSON: async () => {
     const response = await db.query(`
     SELECT * FROM (SELECT warning.id, ST_AsGeoJSON(ST_Centroid(geom))::JSONB AS geometry, warning.name,
-    CASE WHEN warning.severity = 1 THEN 'severe' WHEN warning.severity = 2 THEN 'warning' WHEN warning.severity = 3 THEN 'alert' ELSE 'removed' END AS status,
+    CASE WHEN warning.severity = 1 THEN 'severe' WHEN warning.severity = 2 THEN 'warning' WHEN warning.severity = 3 THEN 'alert' ELSE 'removed' END AS state,
     warning.raised_date AT TIME ZONE '+00' AS raised_date, warning.severity
     FROM warning JOIN flood_warning_areas ON flood_warning_areas.fws_tacode = warning.id UNION
     SELECT warning.id, ST_AsGeoJSON(ST_Centroid(geom))::JSONB AS geometry, warning.name,
-    CASE WHEN warning.severity = 1 THEN 'severe' WHEN warning.severity = 2 THEN 'warning' WHEN warning.severity = 3 THEN 'alert' ELSE 'removed' END AS status,
+    CASE WHEN warning.severity = 1 THEN 'severe' WHEN warning.severity = 2 THEN 'warning' WHEN warning.severity = 3 THEN 'alert' ELSE 'removed' END AS state,
     warning.raised_date AT TIME ZONE '+00' AS raised_date, warning.severity
     FROM warning JOIN flood_alert_areas ON flood_alert_areas.fws_tacode = warning.id) q ORDER BY q.severity DESC;
     `)
@@ -32,7 +32,7 @@ module.exports = {
           id: item.id,
           type: 'targetarea',
           name: item.name,
-          status: item.status,
+          state: item.state,
           issuedDate: item.raised_date
         }
       })
@@ -53,7 +53,7 @@ module.exports = {
       WHEN latest_state = 'high' THEN 'withrisk'
       WHEN type = 'rainfall' AND rainfall_24hr = 0 THEN 'norisk'
       WHEN status != 'active' THEN 'error'
-      ELSE 'default' END AS status,
+      ELSE 'default' END AS state,
       name, river_name, hydrological_catchment_id, hydrological_catchment_name, latest_trend, latest_height, rainfall_1hr, rainfall_6hr, rainfall_24hr, latest_datetime AT TIME ZONE '+00' AS latest_datetime, level_high, level_low, station_up, station_down
       FROM measure_with_latest
       ORDER BY CASE
@@ -77,7 +77,7 @@ module.exports = {
           type: item.type,
           name: item.name,
           river: item.river_name,
-          status: item.status,
+          state: item.state,
           value1hr: item.rainfall_1hr,
           value6hr: item.rainfall_6hr,
           value24hr: item.rainfall_24hr,

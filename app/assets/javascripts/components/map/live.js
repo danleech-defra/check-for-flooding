@@ -40,18 +40,18 @@ function LiveMap (mapId, options) {
   const addWarnings = (geojson) => {
     // Add point data here to save on requests
     map.getSource('warnings').setData(geojson)
-    state.warnings = geojson.features.filter(f => f.properties.status !== 'removed')
+    state.warnings = geojson.features.filter(f => f.properties.state !== 'removed')
     setFeatureVisibility()
   }
 
   // Set feature state for target area polygons
-  const setFeatureState = () => {
+  const setTargetAreaState = () => {
     const features = map.queryRenderedFeatures(null, { layers: ['target-areas'], validate: false })
     features.forEach(f => {
       const warning = state.warnings.find(w => w.properties.id === f.id)
       map.setFeatureState(
         { source: 'polygons', sourceLayer: 'targetareas', id: f.properties.id },
-        { status: warning.properties.status }
+        { state: warning.properties.state }
       )
     })
   }
@@ -75,10 +75,10 @@ function LiveMap (mapId, options) {
     map.setLayoutProperty('aerial', 'visibility', state.layers.includes('sv') ? 'visible' : 'none')
     // Stations
     const types = Object.keys(layersConfig).filter(k => state.layers.includes(layersConfig[k]))
-    map.setFilter('warnings', ['all', ['match', ['get', 'status'], types.length ? types : '', true, false], ['<', ['zoom'], 10]])
+    map.setFilter('warnings', ['all', ['match', ['get', 'state'], types.length ? types : '', true, false], ['<', ['zoom'], 10]])
     map.setFilter('stations', ['match', ['get', 'type'], types.length ? types : '', true, false])
     // Warnings
-    const warnings = state.warnings.filter(w => state.layers.includes(layersConfig[w.properties.status])).map(f => f.properties.id)
+    const warnings = state.warnings.filter(w => state.layers.includes(layersConfig[w.properties.state])).map(f => f.properties.id)
     map.setFilter('target-areas', ['match', ['get', 'id'], warnings.length ? warnings : '', true, false])
   }
 
@@ -88,8 +88,11 @@ function LiveMap (mapId, options) {
       feature.properties.selected = '-selected'
       map.getSource('selected').setData({ type: 'FeatureCollection', features: [feature] })
       map.setLayoutProperty('selected', 'icon-image', map.getLayoutProperty(feature.layer.id, 'icon-image'), { validate: false })
+      map.setFilter('selected', map.getFilter(feature.layer.id))
+      map.setFilter('target-areas-selected', ['in', 'id', feature.properties.id])
     } else {
       map.getSource('selected').setData({ type: 'FeatureCollection', features: [] })
+      map.setFilter('target-areas-selected', ['in', 'id', ''])
     }
 
     // console.log(e.point)
@@ -222,18 +225,7 @@ function LiveMap (mapId, options) {
 
   // Set target area polygon opacity
   const setFillOpacity = (layers) => {
-    const settings = [
-      'interpolate',
-      // Set the exponential rate of change to 0.5
-      ['exponential', 0.5],
-      ['zoom'],
-      // When zoom is 10, areas will be 100% transparent.
-      10,
-      1,
-      // When zoom is 16 or higher, areas will be 30% opaque.
-      16,
-      0.3
-    ]
+    const settings = ['interpolate', ['exponential', 0.5], ['zoom'], 10, 1, 16, 0.3]
     layers.forEach(layer => { map.setPaintProperty(layer, 'fill-opacity', settings) })
   }
 
@@ -324,7 +316,6 @@ function LiveMap (mapId, options) {
     baseLayers = map.getStyle().layers
     map.moveLayer('buildings 2D', 'surfacewater shadow')
     map.moveLayer('buildings 3D', 'surfacewater shadow')
-    console.log(baseLayers)
     // Add sources
     map.addSource('aerial', maps.style.source.aerial)
     map.addSource('polygons', maps.style.source.polygons)
@@ -335,6 +326,7 @@ function LiveMap (mapId, options) {
     map.addLayer(maps.style.aerial, baseLayers[0].id)
     // Target areas
     map.addLayer(maps.style['target-areas'], 'surfacewater shadow')
+    map.addLayer(maps.style['target-areas-selected'], 'road numbers')
     // Points
     map.addLayer(maps.style.stations)
     map.addLayer(maps.style.warnings)
@@ -380,7 +372,7 @@ function LiveMap (mapId, options) {
 
   // Layers
   let baseLayers
-  const symbolLayers = ['stations', 'warnings']
+  const featureLayers = ['target-areas', 'stations', 'warnings']
 
   // View
   // const view = new View({
@@ -522,10 +514,10 @@ function LiveMap (mapId, options) {
     })
   })
 
-  // Whenever new target areas are loaded we set status from the appropriate warning
+  // Whenever new target areas are loaded we set state from the appropriate warning
   map.on('sourcedata', (e) => {
     if (e.sourceId !== 'polygons' && !e.isSourceLoaded) return
-    setFeatureState()
+    setTargetAreaState()
   })
 
   // Map has finishing drawing so we have the bounds
@@ -618,13 +610,17 @@ function LiveMap (mapId, options) {
 
   // Map click
   map.on('click', (e) => {
-    const symbolFeatures = map.queryRenderedFeatures(e.point, { layers: symbolLayers, validate: false })
-    const feature = symbolFeatures.length ? symbolFeatures[0] : null
+    const renderedFeatures = map.queryRenderedFeatures(e.point, { layers: featureLayers, validate: false })
+    let feature = renderedFeatures.length ? renderedFeatures[0] : null
+    if (feature && feature.source === 'polygons') {
+      feature = state.warnings.find(f => f.properties.id === feature.id)
+      feature.layer = { id: 'warnings' }
+    }
     toggleSelectedFeature(feature)
   })
 
   // Change cursor on feature hover
-  symbolLayers.forEach(layer => {
+  featureLayers.forEach(layer => {
     map.on('mouseenter', layer, (e) => {
       map.getCanvas().style.cursor = 'pointer'
     })

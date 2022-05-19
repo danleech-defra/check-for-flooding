@@ -44,12 +44,24 @@ window.flood.maps.style = {
     'source-layer': 'targetareas',
     type: 'fill',
     paint: {
-      'fill-color': ['match', ['feature-state', 'status'],
-        'severe', '#D4351C',
-        'warning', '#D4351C',
-        'alert', '#F47738',
-        '#626A6E'
+      'fill-color': ['match', ['feature-state', 'state'],
+        'severe', '#E3000F',
+        'warning', '#E3000F',
+        'alert', '#F18700',
+        '#6F777B'
       ]
+    },
+    filter: ['in', 'id', ''],
+    minzoom: 10
+  },
+  'target-areas-selected': {
+    id: 'target-areas-selected',
+    source: 'polygons',
+    'source-layer': 'targetareas',
+    type: 'line',
+    paint: {
+      'line-color': '#ffdd00',
+      'line-width': 3
     },
     filter: ['in', 'id', ''],
     minzoom: 10
@@ -59,12 +71,12 @@ window.flood.maps.style = {
     source: 'warnings',
     type: 'symbol',
     layout: {
-      'icon-image': ['concat', ['get', 'status'], ['get', 'selected']],
+      'icon-image': ['concat', ['get', 'state'], ['get', 'selected']],
       'icon-size': 0.5,
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
       'symbol-z-order': 'source',
-      'symbol-sort-key': ['match', ['get', 'status'],
+      'symbol-sort-key': ['match', ['get', 'state'],
         'severe', 3,
         'warning', 2,
         'alert', 1,
@@ -78,14 +90,14 @@ window.flood.maps.style = {
     type: 'symbol',
     layout: {
       'icon-image': ['step', ['zoom'],
-        ['concat', 'level-', ['get', 'status'], ['get', 'selected']], 10,
-        ['concat', ['get', 'type'], '-', ['get', 'status'], ['get', 'selected']]
+        ['concat', 'level-', ['get', 'state'], ['get', 'selected']], 10,
+        ['concat', ['get', 'type'], '-', ['get', 'state'], ['get', 'selected']]
       ],
       'icon-size': 0.5,
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
       'symbol-z-order': 'source',
-      'symbol-sort-key': ['match', ['get', 'status'],
+      'symbol-sort-key': ['match', ['get', 'state'],
         'withrisk', 4,
         'default', 3,
         'norisk', 2,
