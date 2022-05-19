@@ -101,9 +101,8 @@ function LiveMap (mapId, options) {
       state.selectedFeature = feature
       feature.properties.selected = '-selected'
       map.getSource('selected').setData({ type: 'FeatureCollection', features: [feature] })
-      const iconImage = map.getLayoutProperty(feature.layer.id, 'icon-image')
-      console.log(iconImage)
-      map.setLayoutProperty('selected', 'icon-image', iconImage, { validate: false })
+      const layoutIconImage = map.getLayoutProperty(feature.layer.id, 'icon-image')
+      map.setLayoutProperty('selected', 'icon-image', layoutIconImage, { validate: false })
       map.setFilter('selected', map.getFilter(feature.layer.id))
       map.setFilter('target-areas-selected', ['in', 'id', feature.properties.id])
     } else {
