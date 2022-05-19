@@ -73,8 +73,14 @@ function LiveMap (mapId, options) {
     map.setLayoutProperty('country names', 'visibility', 'none')
     // Aerial
     map.setLayoutProperty('aerial', 'visibility', state.layers.includes('sv') ? 'visible' : 'none')
-    // Stations
     const types = Object.keys(layersConfig).filter(k => state.layers.includes(layersConfig[k]))
+    // Conditionally hide selected feature
+    if (state.selectedFeature) {
+      const properties = state.selectedFeature.properties
+      const type = properties.type === 'targetarea' ? properties.state : properties.type
+      if (!types.includes(type)) toggleSelectedFeature(null)
+    }
+    // Stations
     map.setFilter('warnings', ['all', ['match', ['get', 'state'], types.length ? types : '', true, false], ['<', ['zoom'], 10]])
     map.setFilter('stations', ['match', ['get', 'type'], types.length ? types : '', true, false])
     // Warnings
@@ -85,12 +91,14 @@ function LiveMap (mapId, options) {
   // Set selected feature
   const toggleSelectedFeature = (feature) => {
     if (feature) {
+      state.selectedFeature = feature
       feature.properties.selected = '-selected'
       map.getSource('selected').setData({ type: 'FeatureCollection', features: [feature] })
       map.setLayoutProperty('selected', 'icon-image', map.getLayoutProperty(feature.layer.id, 'icon-image'), { validate: false })
       map.setFilter('selected', map.getFilter(feature.layer.id))
       map.setFilter('target-areas-selected', ['in', 'id', feature.properties.id])
     } else {
+      state.selectedFeature = null
       map.getSource('selected').setData({ type: 'FeatureCollection', features: [] })
       map.setFilter('target-areas-selected', ['in', 'id', ''])
     }
