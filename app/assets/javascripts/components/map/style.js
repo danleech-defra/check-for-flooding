@@ -82,7 +82,8 @@ window.flood.maps.style = {
         'alert', 1,
         1
       ]
-    }
+    },
+    maxzoom: 10
   },
   stations: {
     id: 'stations',
