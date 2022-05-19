@@ -13,6 +13,8 @@ window.flood.maps.symbols = {
   'alert-selected': { left: 101, top: 201, size: 98 },
   removed: { left: 16, top: 316, size: 68 },
   'removed-selected': { left: 101, top: 301, size: 98 },
+  inactive: { left: 16, top: 316, size: 68 },
+  'inactive-selected': { left: 101, top: 301, size: 98 },
   'river-withrisk': { left: 19, top: 519, size: 62 },
   'river-withrisk-selected': { left: 101, top: 501, size: 98 },
   'river-default': { left: 19, top: 619, size: 62 },

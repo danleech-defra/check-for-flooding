@@ -38,6 +38,10 @@ function LiveMap (mapId, options) {
 
   // Add target areas to corresponsing warning layers
   const addWarnings = (geojson) => {
+    // Add a target area if not active
+    if (state.targetArea && !geojson.features.filter(f => f.properties.id === state.targetArea.properties.id).length) {
+      geojson.features.push(state.targetArea)
+    }
     // Add point data here to save on requests
     map.getSource('warnings').setData(geojson)
     const warnings = geojson.features.filter(f => f.properties.state !== 'removed')
@@ -73,6 +77,8 @@ function LiveMap (mapId, options) {
     // Toggle aerial layer
     map.setLayoutProperty('aerial', 'visibility', state.layers.includes('sv') ? 'visible' : 'none')
     const types = Object.keys(layersConfig).filter(k => state.layers.includes(layersConfig[k]))
+    // Add inactive type for target areas
+    types.push('inactive')
     // Conditionally hide selected feature
     if (state.selectedFeature) {
       const properties = state.selectedFeature.properties
@@ -84,6 +90,8 @@ function LiveMap (mapId, options) {
     map.setFilter('stations', ['match', ['get', 'type'], types.length ? types : '', true, false])
     // Filter target areas
     const warnings = state.warnings.filter(w => state.layers.includes(layersConfig[w.properties.state])).map(f => f.properties.id)
+    // Add target area id if not active
+    if (state.targetArea) warnings.push(state.targetArea.properties.id)
     map.setFilter('target-areas', ['match', ['get', 'id'], warnings.length ? warnings : '', true, false])
   }
 
@@ -359,13 +367,7 @@ function LiveMap (mapId, options) {
   // Setup
   //
 
-  // Set maxBigZoom value
-  maps.liveMaxBigZoom = 100
-
-  // Optional target area features
-  const targetArea = null
-
-  // COnst layers config
+  // Layers config
   const layersConfig = { default: 'mv', aerial: 'ms', severe: 'ts', warning: 'tw', alert: 'ta', removed: 'tr', river: 'ri', sea: 'se', groundwater: 'gr', rain: 'rf' }
 
   // State object
@@ -373,6 +375,7 @@ function LiveMap (mapId, options) {
     warnings: [],
     visibleFeatures: [],
     selectedFeature: '',
+    targetArea: null,
     initialExt: [],
     layers: []
   }
@@ -409,7 +412,6 @@ function LiveMap (mapId, options) {
 
   // Options to pass to the MapContainer constructor
   const containerOptions = {
-    maxBigZoom: maps.liveMaxBigZoom,
     bounds: ext,
     centre: options.centre,
     zoom: 10,
@@ -442,55 +444,22 @@ function LiveMap (mapId, options) {
   //   state.selectedFeatureId = decodeURI(getParameterByName('fid'))
   // }
 
-  // Create optional target area feature
-  // if (options.targetArea) {
-  //   targetArea.pointFeature = new Feature({
-  //     geometry: new Point(transform(options.targetArea.centre, 'EPSG:4326', 'EPSG:3857')),
-  //     name: options.targetArea.name,
-  //     ta_code: options.targetArea.id,
-  //     type: 'TA'
-  //   })
-  //   targetArea.pointFeature.setId(options.targetArea.id)
-  // }
-
-  // Set map viewport
-  // if (!getParameterByName('ext') && options.centre) {
-  //   map.getView().setCenter(transform(options.centre, 'EPSG:4326', 'EPSG:3857'))
-  //   map.getView().setZoom(options.zoom || 6)
-  // } else {
-  //   setExtentFromLonLat(map, extent)
-  // }
-
-  // map.addSource('background', {
-  //   type: 'vector',
-  //   tiles: ['https://s3-eu-west-1.amazonaws.com/tiles.os.uk/v2/styles/open-zoomstack-outdoor/style.json'],
-  //   minzoom: 6,
-  //   maxzoom: 14
-  // })
-
-  // Object.keys(maps.symbols).forEach(key => {
-  //   map.loadImage(maps.symbols[key], (error, image) => {
-  //     if (error) throw error
-  //     map.addImage(key, image)
-  //   })
-  // })
-  // map.loadImage('/public/images/map-symbols-2x.png', (error, image) => {
-  //   if (error) throw error
-  //   forEach( => {
-  //   map.addImage('markers', image)
-  //   })
-  //   map.addSource('river-levels', maps.style.source['river-levels'])
-  //   map.addLayer(maps.style['river-levels'])
-  // })
-
-  // xhr(`${window.location.origin}/service/geojson/stations`, (err, response) => {
-  //   if (err) {
-  //     console.log('Error: ' + err)
-  //   } else {
-  //     stationData = response
-  //     initMap()
-  //   }
-  // }, 'json')
+  // Create target area feature if not active
+  if (options.targetArea) {
+    state.targetArea = {
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: options.targetArea.centre
+      },
+      properties: {
+        id: options.targetArea.id,
+        name: options.targetArea.name,
+        state: 'inactive',
+        type: 'targetarea'
+      }
+    }
+  }
 
   //
   // Events
