@@ -40,20 +40,19 @@ function LiveMap (mapId, options) {
   const addWarnings = (geojson) => {
     // Add point data here to save on requests
     map.getSource('warnings').setData(geojson)
-    state.warnings = geojson.features.filter(f => f.properties.state !== 'removed')
+    const warnings = geojson.features.filter(f => f.properties.state !== 'removed')
+    // Set fill colour for target areas
+    const severe = warnings.filter(w => w.properties.state === 'severe').map(w => w.properties.id)
+    const warning = warnings.filter(w => w.properties.state === 'warning').map(w => w.properties.id)
+    const alert = warnings.filter(w => w.properties.state === 'alert').map(w => w.properties.id)
+    map.setPaintProperty('target-areas', 'fill-color', ['case',
+      ['in', ['get', 'id'], ['literal', severe.length ? severe : '']], '#E3000F',
+      ['in', ['get', 'id'], ['literal', warning.length ? warning : '']], '#E3000F',
+      ['in', ['get', 'id'], ['literal', alert.length ? alert : '']], '#F18700',
+      '#6F777B']
+    )
+    state.warnings = warnings
     setFeatureVisibility()
-  }
-
-  // Set feature state for target area polygons
-  const setTargetAreaState = () => {
-    const features = map.queryRenderedFeatures(null, { layers: ['target-areas'], validate: false })
-    features.forEach(f => {
-      const warning = state.warnings.find(w => w.properties.id === f.id)
-      map.setFeatureState(
-        { source: 'polygons', sourceLayer: 'targetareas', id: f.properties.id },
-        { state: warning.properties.state }
-      )
-    })
   }
 
   // Show or hide layers or features within layers
@@ -520,12 +519,6 @@ function LiveMap (mapId, options) {
         })
       })
     })
-  })
-
-  // Whenever new target areas are loaded we set state from the appropriate warning
-  map.on('sourcedata', (e) => {
-    if (e.sourceId !== 'polygons' && !e.isSourceLoaded) return
-    setTargetAreaState()
   })
 
   // Map has finishing drawing so we have the bounds

@@ -44,14 +44,14 @@ window.flood.maps.style = {
     'source-layer': 'targetareas',
     type: 'fill',
     paint: {
-      'fill-color': ['match', ['feature-state', 'state'],
-        'severe', '#E3000F',
-        'warning', '#E3000F',
-        'alert', '#F18700',
+      'fill-color': ['case',
+        ['in', ['get', 'id'], ''], '#E3000F',
+        ['in', ['get', 'id'], ''], '#E3000F',
+        ['in', ['get', 'id'], ''], '#F18700',
         '#6F777B'
       ]
     },
-    filter: ['in', 'id', ''],
+    filter: ['in', ['get', 'id'], ''],
     minzoom: 10
   },
   'target-areas-selected': {
@@ -63,7 +63,7 @@ window.flood.maps.style = {
       'line-color': '#ffdd00',
       'line-width': 3
     },
-    filter: ['in', 'id', ''],
+    filter: ['in', ['get', 'id'], ''],
     minzoom: 10
   },
   warnings: {
