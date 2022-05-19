@@ -65,13 +65,13 @@ function LiveMap (mapId, options) {
       const inputs = document.querySelectorAll('.defra-map-key input')
       forEach(inputs, (input) => { input.checked = state.layers.includes(input.id) })
     }
-    // Base layer group
+    // Toggle base layer group
     baseLayers.forEach(layer => {
       map.setLayoutProperty(layer.id, 'visibility', state.layers.includes('mv') ? 'visible' : 'none')
     })
-    // Base layer custom properties
+    // Apply base layer custom properties
     map.setLayoutProperty('country names', 'visibility', 'none')
-    // Aerial
+    // Toggle aerial layer
     map.setLayoutProperty('aerial', 'visibility', state.layers.includes('sv') ? 'visible' : 'none')
     const types = Object.keys(layersConfig).filter(k => state.layers.includes(layersConfig[k]))
     // Conditionally hide selected feature
@@ -80,10 +80,10 @@ function LiveMap (mapId, options) {
       const type = properties.type === 'targetarea' ? properties.state : properties.type
       if (!types.includes(type)) toggleSelectedFeature(null)
     }
-    // Stations
+    // Filter warning points and stations
     map.setFilter('warnings', ['all', ['match', ['get', 'state'], types.length ? types : '', true, false], ['<', ['zoom'], 10]])
     map.setFilter('stations', ['match', ['get', 'type'], types.length ? types : '', true, false])
-    // Warnings
+    // Filter target areas
     const warnings = state.warnings.filter(w => state.layers.includes(layersConfig[w.properties.state])).map(f => f.properties.id)
     map.setFilter('target-areas', ['match', ['get', 'id'], warnings.length ? warnings : '', true, false])
   }
