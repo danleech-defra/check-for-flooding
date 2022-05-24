@@ -423,7 +423,8 @@ window.flood.maps.MapContainer = function MapContainer (mapId, options) {
     dragRotate: false,
     minZoom: 6,
     maxZoom: 16,
-    zoom: options.zoom
+    zoom: options.zoom,
+    fadeDuration: 0
     // transformRequest: url => {
     //   url += '&srs=3857'
     //   return {
@@ -473,7 +474,7 @@ window.flood.maps.MapContainer = function MapContainer (mapId, options) {
     infoContent.innerHTML = body
     containerElement.appendChild(infoElement)
     state.isInfoOpen = true
-    infoElement.focus()
+    // infoElement.focus()
   }
 
   //
@@ -519,8 +520,8 @@ window.flood.maps.MapContainer = function MapContainer (mapId, options) {
   tabletListener(tabletMediaQuery)
 
   // Map click
-  // map.on('click', (e) => {
-  viewport.addEventListener('click', (e) => {
+  map.on('click', (e) => {
+  // viewport.addEventListener('click', (e) => {
     // Hide key
     if (state.isTablet && state.isKeyOpen) { closeKey() }
     // Close info panel

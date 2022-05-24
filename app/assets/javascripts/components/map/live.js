@@ -105,23 +105,13 @@ function LiveMap (mapId, options) {
       map.setLayoutProperty('selected', 'icon-image', layoutIconImage, { validate: false })
       map.setFilter('selected', map.getFilter(feature.layer.id))
       map.setFilter('target-areas-selected', ['in', 'id', feature.properties.id])
+      const html = '<span>Text</span>'
+      container.showInfo('Selected feature information', html)
     } else {
       state.selectedFeature = null
       map.getSource('selected').setData({ type: 'FeatureCollection', features: [] })
       map.setFilter('target-areas-selected', ['in', 'id', ''])
     }
-
-    // console.log(e.point)
-    // map.setFeatureState(
-    //   {
-    //     source: feature.source,
-    //     id: feature.id
-    //   },
-    //   {
-    //     isSelected: true
-    //   }
-    // )
-    // console.log(e.features[0])
     // replaceHistory('fid', newFeatureId)
   }
 
@@ -385,20 +375,6 @@ function LiveMap (mapId, options) {
   let baseLayers
   const featureLayers = ['target-areas', 'stations', 'warnings']
 
-  // View
-  // const view = new View({
-  //   zoom: 6, // Default zoom
-  //   minZoom: 6, // Minimum zoom level
-  //   maxZoom: 18,
-  //   center: maps.centre, // Default centre required
-  //   extent: maps.extent // Constrains extent
-  // })
-
-  // Configure default interactions
-  // const interactions = defaultInteractions({
-  //   pinchRotate: false
-  // })
-
   // Define bounds
   let ext = getParameterByName('ext')
   if (ext) {
@@ -644,14 +620,14 @@ function LiveMap (mapId, options) {
   })
 
   // Clear selectedfeature when info is closed
-  // closeInfoButton.addEventListener('click', (e) => {
-  //   setSelectedFeature()
-  // })
+  closeInfoButton.addEventListener('click', (e) => {
+    toggleSelectedFeature(null)
+  })
 
   // Clear selectedfeature when key is opened
-  // openKeyButton.addEventListener('click', (e) => {
-  //   setSelectedFeature()
-  // })
+  openKeyButton.addEventListener('click', (e) => {
+    toggleSelectedFeature(null)
+  })
 
   // Reset map extent on reset button click
   resetButton.addEventListener('click', (e) => {
