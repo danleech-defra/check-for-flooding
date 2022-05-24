@@ -101,8 +101,8 @@ function LiveMap (mapId, options) {
       state.selectedFeature = feature
       feature.properties.selected = '-selected'
       map.getSource('selected').setData({ type: 'FeatureCollection', features: [feature] })
-      const layoutIconImage = map.getLayoutProperty(feature.layer.id, 'icon-image')
-      map.setLayoutProperty('selected', 'icon-image', layoutIconImage, { validate: false })
+      // const layoutIconImage = map.getLayoutProperty(feature.layer.id, 'icon-image')
+      // map.setLayoutProperty('selected', 'icon-image', layoutIconImage, { validate: false })
       map.setFilter('selected', map.getFilter(feature.layer.id))
       map.setFilter('target-areas-selected', ['in', 'id', feature.properties.id])
       const html = '<span>Text</span>'
@@ -296,16 +296,16 @@ function LiveMap (mapId, options) {
 
   // Set feature overlay html
   const setFeatureHtml = (feature) => {
-    // const model = feature.getProperties()
-    // model.id = feature.getId().substring(feature.getId().indexOf('.') + 1)
-    // // Format dates for river levels
-    // if (feature.getId().startsWith('stations')) {
-    //   model.date = formatExpiredTime(model.valueDate)
-    // } else if (model.issuedDate) {
-    //   model.date = `${formatTime(new Date(model.issuedDate))} ${formatDay(new Date(model.issuedDate))}`
-    // }
-    // const html = window.nunjucks.render('info-live.html', { model: model })
-    // feature.set('html', html)
+    const model = feature.properties
+    model.id = feature.properties.id
+    // Format dates for river levels
+    if (feature.getId().startsWith('stations')) {
+      model.date = formatExpiredTime(model.latestDate)
+    } else if (model.issuedDate) {
+      model.date = `${formatTime(new Date(model.issuedDate))} ${formatDay(new Date(model.issuedDate))}`
+    }
+    const html = window.nunjucks.render('info-live.html', { model: model })
+    feature.set('html', html)
   }
 
   // Show reset button if extent has changed

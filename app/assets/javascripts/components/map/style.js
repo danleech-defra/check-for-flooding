@@ -107,14 +107,23 @@ window.flood.maps.style = {
       ]
     }
   },
+  // selected: {
+  //   id: 'selected',
+  //   source: 'selected',
+  //   type: 'symbol',
+  //   layout: {
+  //     'icon-size': 0.5,
+  //     'icon-allow-overlap': true,
+  //     'icon-ignore-placement': true
+  //   }
+  // },
   selected: {
     id: 'selected',
     source: 'selected',
-    type: 'symbol',
-    layout: {
-      'icon-size': 0.5,
-      'icon-allow-overlap': true,
-      'icon-ignore-placement': true
+    type: 'circle',
+    paint: {
+      'circle-radius': 20,
+      'circle-color': 'yellow'
     }
   }
 }

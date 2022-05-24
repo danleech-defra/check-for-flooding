@@ -13,11 +13,11 @@ module.exports = {
   },
   getWarningsGeoJSON: async () => {
     const response = await db.query(`
-    SELECT * FROM (SELECT warning.id, ST_AsGeoJSON(ST_Centroid(geom))::JSONB AS geometry, warning.name,
+    SELECT * FROM (SELECT warning.id, ST_AsGeoJSON(ST_Centroid(geom), 6)::JSONB AS geometry, warning.name,
     CASE WHEN warning.severity = 1 THEN 'severe' WHEN warning.severity = 2 THEN 'warning' WHEN warning.severity = 3 THEN 'alert' ELSE 'removed' END AS state,
     warning.raised_date AT TIME ZONE '+00' AS raised_date, warning.severity
     FROM warning JOIN flood_warning_areas ON flood_warning_areas.fws_tacode = warning.id UNION
-    SELECT warning.id, ST_AsGeoJSON(ST_Centroid(geom))::JSONB AS geometry, warning.name,
+    SELECT warning.id, ST_AsGeoJSON(ST_Centroid(geom), 6)::JSONB AS geometry, warning.name,
     CASE WHEN warning.severity = 1 THEN 'severe' WHEN warning.severity = 2 THEN 'warning' WHEN warning.severity = 3 THEN 'alert' ELSE 'removed' END AS state,
     warning.raised_date AT TIME ZONE '+00' AS raised_date, warning.severity
     FROM warning JOIN flood_alert_areas ON flood_alert_areas.fws_tacode = warning.id) q ORDER BY q.severity DESC;
@@ -70,7 +70,7 @@ module.exports = {
         id: `stations.${item.type === 'R' ? item.station_id : item.rloi_id}`,
         geometry: {
           type: 'Point',
-          coordinates: [item.lon, item.lat]
+          coordinates: [Math.round(item.lon * 1000000) / 1000000, Math.round(item.lat * 1000000) / 1000000]
         },
         properties: {
           id: item.station_id,
