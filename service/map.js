@@ -65,7 +65,7 @@ module.exports = {
     `)
     const features = []
     response.forEach(item => {
-      features.push({
+      const feature = {
         type: 'Feature',
         id: `stations.${item.type === 'R' ? item.station_id : item.rloi_id}`,
         geometry: {
@@ -90,7 +90,8 @@ module.exports = {
           isMultiStage: item.is_multi_stage,
           isDownstage: item.measure_type === 'downstage'
         }
-      })
+      }
+      features.push(feature)
     })
     const geoJSON = {
       type: 'FeatureCollection',

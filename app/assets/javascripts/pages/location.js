@@ -8,7 +8,7 @@ import '../components/map/symbols'
 import '../components/map/style'
 import '../components/map/container'
 import '../components/map/live'
-import '../components/map/outlook'
+// import '../components/map/outlook'
 
 // Create LiveMap
 if (document.getElementById('map-live')) {
@@ -21,11 +21,11 @@ if (document.getElementById('map-live')) {
 }
 
 // Create Outlook Map
-if (document.getElementById('map-outlook')) {
-  window.flood.maps.createOutlookMap('map-outlook', {
-    btnText: 'View map showing flood risk areas',
-    btnClasses: 'defra-button-secondary defra-button-secondary--icon',
-    days: window.flood.model.outlookDays,
-    extent: window.flood.model.bbox
-  })
-}
+// if (document.getElementById('map-outlook')) {
+//   window.flood.maps.createOutlookMap('map-outlook', {
+//     btnText: 'View map showing flood risk areas',
+//     btnClasses: 'defra-button-secondary defra-button-secondary--icon',
+//     days: window.flood.model.outlookDays,
+//     extent: window.flood.model.bbox
+//   })
+// }
